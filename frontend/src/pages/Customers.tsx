@@ -1,0 +1,37 @@
+import CatalogPage from "./CatalogPage";
+import { catalogApi, type Customer } from "../api";
+
+const GROUP: Record<string, string> = { dealer: "Đại lý", retail: "Khách lẻ" };
+
+export default function Customers() {
+  return (
+    <CatalogPage<Customer>
+      title="Danh mục khách hàng"
+      load={catalogApi.customers}
+      save={(item) => catalogApi.saveCustomer({ ...item, code: String(item.code || "").trim().toUpperCase() })}
+      remove={catalogApi.deleteCustomer}
+      empty={{ code: "", name: "", address: "", phone: "", email: "", taxCode: "", idCard: "", customerGroup: "dealer", note: "" }}
+      fields={[
+        { key: "code", label: "Mã khách" },
+        { key: "name", label: "Tên khách" },
+        { key: "customerGroup", label: "Nhóm khách", type: "select", options: [
+          { value: "dealer", label: "Đại lý (BH 2 năm 3 tháng)" },
+          { value: "retail", label: "Khách lẻ (BH 2 năm)" },
+        ] },
+        { key: "phone", label: "Điện thoại" },
+        { key: "email", label: "Email" },
+        { key: "taxCode", label: "MST" },
+        { key: "idCard", label: "CCCD" },
+        { key: "address", label: "Địa chỉ" },
+        { key: "note", label: "Ghi chú" },
+      ]}
+      columns={[
+        { key: "code", label: "Mã" },
+        { key: "name", label: "Tên khách" },
+        { key: "customerGroup", label: "Nhóm", format: (row) => GROUP[row.customerGroup] || row.customerGroup },
+        { key: "phone", label: "Điện thoại" },
+        { key: "address", label: "Địa chỉ" },
+      ]}
+    />
+  );
+}

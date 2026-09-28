@@ -1,0 +1,19 @@
+HƯỚNG DẪN NỘP / MỞ SOURCE (Visual Studio)
+========================================
+
+File solution (mở bằng Visual Studio):
+  D:\đồ án tốt nghiệp\QuanLyKhoBaoHanh\QuanLyKhoBaoHanh.sln
+
+Cách mở:
+  1. Cài Visual Studio 2022/2026, workload "Desktop development with .NET".
+  2. Double-click file QuanLyKhoBaoHanh.sln
+  3. F5 để chạy — đây là 1 app Windows duy nhất (không cần chạy web React).
+
+Đăng nhập bằng tài khoản đã có trên SQL (cùng database Quanlysanpham).
+Chuỗi kết nối sửa trong:
+  QuanLyKhoBaoHanh\App.config
+
+Menu:
+  1. Danh mục
+  2. Kho  (Phiếu xuất kho, Tồn kho)
+  3. Tạo số Serial

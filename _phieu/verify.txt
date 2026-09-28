@@ -1,0 +1,24 @@
+Desktop Application
+Management Information System
+Quản trị viên
+Nhân viên
+Doanh nghiệp
+Máy tính cá nhân
+Source Code
+Database
+File cài đặt/Deploy
+Tài khoản Demo
+Tài liệu hướng dẫn sử dụng
+Báo cáo đồ án
+Slide thuyết trình
+Video Demo
+ChatGPT
+Claude
+Công cụ AI khác:
+Phân tích yêu cầu
+Thiết kế hệ thống
+Sinh mã nguồn
+Debug
+Viết tài liệu
+---
+Tên đề tài : Xây dựng phần mềm quản lý xuất kho và vòng đời bảo hành sản phẩm theo số serialLĩnh vực của đề tài: ☐ Web Application☐ Mobile Application☑ Desktop Application☐ Game Development☐ E-Commerc

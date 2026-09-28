@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <connectionStrings>
+    <add name="Quanlysanpham"
+         connectionString="Data Source=localhost\SQLEXPRESS03;Initial Catalog=Quanlysanpham;User ID=your_username;Password=your_password;Encrypt=False;TrustServerCertificate=True;Connect Timeout=8;"
+         providerName="Microsoft.Data.SqlClient" />
+  </connectionStrings>
+</configuration>

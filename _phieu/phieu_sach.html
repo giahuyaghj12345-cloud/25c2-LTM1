@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Phiếu đăng ký đề tài đồ án chuyên ngành</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 13pt;
+    line-height: 1.35;
+    color: #000;
+  }
+  h1 { text-align: center; font-size: 16pt; margin: 4px 0 12px; text-transform: uppercase; }
+  .meta { margin: 0 0 10px; }
+  .meta td { padding: 1px 8px 1px 0; vertical-align: top; }
+  h2 { font-size: 13.5pt; margin: 14px 0 8px; }
+  h3 { font-size: 13pt; margin: 10px 0 4px; }
+  p { margin: 4px 0; text-align: justify; }
+  .hint { font-style: italic; }
+  .box {
+    border: 1px solid #333;
+    padding: 8px 10px;
+    margin: 6px 0 10px;
+    background: #fff;
+  }
+  table.grid { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+  table.grid th, table.grid td {
+    border: 1px solid #000;
+    padding: 5px 7px;
+    vertical-align: top;
+  }
+  table.grid th { text-align: center; background: #f2f2f2; }
+  .c { text-align: center; }
+  .checks { width: 100%; border-collapse: collapse; margin: 4px 0 10px; }
+  .checks td { width: 50%; padding: 2px 4px; border: 0; }
+  .small { font-size: 12pt; }
+  .sign { width: 100%; margin-top: 18px; border-collapse: collapse; }
+  .sign td { width: 50%; text-align: center; vertical-align: top; padding: 8px; border: 0; }
+  ul { margin: 4px 0 8px 22px; }
+  .head-line { text-align: center; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<p class="head-line">Khoa: CÔNG NGHỆ THÔNG TIN</p>
+<h1>PHIẾU ĐĂNG KÝ ĐỀ TÀI ĐỒ ÁN CHUYÊN NGÀNH</h1>
+
+<table class="meta">
+  <tr><td>Học kỳ: <b>2026-2027</b></td><td>Năm học: <b>2026</b></td></tr>
+  <tr><td>Lớp: <b>25C2-LTM1</b></td><td>Ngành: <b>Lập trình máy tính</b></td></tr>
+  <tr><td>Khóa: <b>2025</b></td><td></td></tr>
+</table>
+
+<h2>I. THÔNG TIN NHÓM/SINH VIÊN</h2>
+<p>Thông tin sinh viên (Họ và tên sinh viên / nhóm sinh viên được giao đề tài):</p>
+<p>(1) Nguyễn Phi Gia Huy &nbsp;&nbsp;&nbsp; MSSV: 25002474 &nbsp;&nbsp;&nbsp; Lớp: LTM1</p>
+<p>(2) Lưu Phú Nguyễn &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; MSSV: ………………… &nbsp;&nbsp;&nbsp; Lớp: LTM1</p>
+
+<h2>II. THÔNG TIN ĐỀ TÀI</h2>
+<h3>1. Tên đề tài</h3>
+<div class="box">Xây dựng phần mềm quản lý xuất kho và vòng đời bảo hành sản phẩm theo số serial</div>
+
+<h3>2. Lĩnh vực của đề tài</h3>
+<table class="checks">
+  <tr>
+    <td>☐ Web Application</td>
+    <td>☑ Desktop Application</td>
+  </tr>
+  <tr>
+    <td>☐ Mobile Application</td>
+    <td>☐ Game Development</td>
+  </tr>
+  <tr>
+    <td>☐ E-Commerce</td>
+    <td>☑ Management Information System</td>
+  </tr>
+  <tr>
+    <td>☐ AI Application</td>
+    <td>☐ IoT/Application</td>
+  </tr>
+  <tr>
+    <td colspan="2">☐ Khác: ……………………</td>
+  </tr>
+</table>
+
+<h2>III. MÔ TẢ ĐỀ TÀI</h2>
+<h3>1. Lý do chọn đề tài</h3>
+<p class="hint">Trình bày ngắn gọn vấn đề thực tế mà đề tài muốn giải quyết:</p>
+<div class="box">
+Doanh nghiệp đang gặp khó khăn trong việc quản lý xuất kho, số serial và vòng đời bảo hành sản phẩm bằng các file Excel rời rạc. Cách làm thủ công dễ trùng serial, sửa nhầm phiếu đã xuất và không khóa được phiếu khi đã tạo số. Cần một phần mềm desktop kết nối SQL Server để quản lý thống nhất, đúng quy tắc nghiệp vụ.
+</div>
+
+<h3>2. Vấn đề cần giải quyết</h3>
+<div class="box">
+Lập và quản lý phiếu xuất kho (xuất bán / phụ tùng bảo hành); sinh số serial theo quy tắc, không trùng, reset theo tháng; chỉ một người dùng được vào chức năng tạo serial tại một thời điểm; khóa phiếu sau khi hoàn tất, không cho sửa/xóa; phân quyền quản trị, kho, bảo hành, bán hàng.
+</div>
+
+<h3>3. Đối tượng sử dụng</h3>
+<table class="checks">
+  <tr>
+    <td>☑ Quản trị viên</td>
+    <td>☑ Nhân viên</td>
+  </tr>
+  <tr>
+    <td>☐ Khách hàng</td>
+    <td>☐ Sinh viên</td>
+  </tr>
+  <tr>
+    <td>☐ Giảng viên</td>
+    <td>☑ Doanh nghiệp</td>
+  </tr>
+  <tr>
+    <td>☐ Người dùng phổ thông</td>
+    <td>☐ Khác: ……………………</td>
+  </tr>
+</table>
+
+<h3>4. Mục tiêu của đề tài</h3>
+<p><b>Mục tiêu tổng quát:</b></p>
+<div class="box">
+Xây dựng ứng dụng Windows quản lý xuất kho, danh mục sản phẩm/tiền công và vòng đời bảo hành theo số serial; có phân quyền người dùng; dữ liệu lưu trên SQL Server.
+</div>
+<p><b>Các mục tiêu cụ thể:</b></p>
+<p>1. Xây dựng phân hệ danh mục (sản phẩm, tiền công) và phiếu xuất kho.</p>
+<p>2. Xây dựng quy trình tạo serial, khóa độc quyền và hoàn tất phiếu.</p>
+<p>3. Xây dựng đăng nhập, hồ sơ, phân quyền và kiểm thử trên dữ liệu thật.</p>
+
+<h2>IV. PHẠM VI ĐỀ TÀI</h2>
+<h3>1. Phạm vi chức năng</h3>
+<p>Liệt kê các chức năng dự kiến:</p>
+<table class="grid">
+  <tr>
+    <th style="width:8%">STT</th>
+    <th style="width:24%">Chức năng</th>
+    <th>Mô tả ngắn</th>
+    <th style="width:18%">Mức độ ưu tiên</th>
+  </tr>
+  <tr>
+    <td class="c">1</td>
+    <td>Đăng nhập / phân quyền</td>
+    <td>Tài khoản, vai trò, cấp quyền tạo serial</td>
+    <td class="c">Cao</td>
+  </tr>
+  <tr>
+    <td class="c">2</td>
+    <td>Danh mục sản phẩm</td>
+    <td>Mã, tên, ĐVT, nhóm serial, theo dõi tồn kho</td>
+    <td class="c">Cao</td>
+  </tr>
+  <tr>
+    <td class="c">3</td>
+    <td>Danh mục tiền công</td>
+    <td>Mã, tên, số tiền</td>
+    <td class="c">Trung bình</td>
+  </tr>
+  <tr>
+    <td class="c">4</td>
+    <td>Phiếu xuất kho</td>
+    <td>Lập, sửa, lưu, hủy, xóa (khi chưa khóa)</td>
+    <td class="c">Cao</td>
+  </tr>
+  <tr>
+    <td class="c">5</td>
+    <td>Tạo số serial</td>
+    <td>Sinh serial theo phiếu; hạn BH đại lý / khách lẻ</td>
+    <td class="c">Cao</td>
+  </tr>
+  <tr>
+    <td class="c">6</td>
+    <td>Hồ sơ / tồn kho</td>
+    <td>Cập nhật thông tin user, xem tồn danh mục</td>
+    <td class="c">Trung bình</td>
+  </tr>
+</table>
+
+<h3>2. Phạm vi dữ liệu</h3>
+<p>Đề tài dự kiến quản lý các loại dữ liệu:</p>
+<p>+ Người dùng, vai trò, quyền tạo serial</p>
+<p>+ Danh mục sản phẩm (dmsp), tiền công</p>
+<p>+ Phiếu xuất kho, dòng hàng, số serial, khóa tính năng và bộ đếm tháng</p>
+
+<h3>3. Phạm vi triển khai</h3>
+<table class="checks">
+  <tr>
+    <td>☑ Máy tính cá nhân</td>
+    <td>☐ Mạng LAN</td>
+  </tr>
+  <tr>
+    <td>☐ Web Server</td>
+    <td>☐ Cloud</td>
+  </tr>
+  <tr>
+    <td>☐ Mobile</td>
+    <td>☐ Khác: ……………………</td>
+  </tr>
+</table>
+
+<h3>4. Những nội dung không thuộc phạm vi đề tài</h3>
+<div class="box">
+Nhập kho mua hàng, kế toán tổng hợp, ứng dụng mobile, cổng khách hàng kích hoạt bảo hành trên web, tích hợp hạch toán ERP đầy đủ.
+</div>
+
+<h2>V. CÔNG NGHỆ DỰ KIẾN</h2>
+<table class="grid">
+  <tr>
+    <th style="width:8%">STT</th>
+    <th style="width:32%">Thành phần</th>
+    <th>Công nghệ dự kiến</th>
+  </tr>
+  <tr><td class="c">1</td><td>Frontend</td><td>Windows Forms (.NET 9)</td></tr>
+  <tr><td class="c">2</td><td>Backend</td><td>C# kết nối trực tiếp CSDL</td></tr>
+  <tr><td class="c">3</td><td>Database</td><td>Microsoft SQL Server</td></tr>
+  <tr><td class="c">4</td><td>API</td><td>Không tách API (ADO.NET / Microsoft.Data.SqlClient)</td></tr>
+  <tr><td class="c">5</td><td>Framework</td><td>.NET 9 WinForms</td></tr>
+  <tr><td class="c">6</td><td>Ngôn ngữ lập trình</td><td>C#</td></tr>
+  <tr><td class="c">7</td><td>Công cụ phát triển</td><td>Visual Studio</td></tr>
+  <tr><td class="c">8</td><td>Công cụ thiết kế</td><td>WinForms Designer</td></tr>
+  <tr><td class="c">9</td><td>Công cụ kiểm thử</td><td>Kiểm thử thủ công trên app và SQL</td></tr>
+  <tr><td class="c">10</td><td>AI hỗ trợ phát triển</td><td>Cursor, ChatGPT, Claude</td></tr>
+  <tr><td class="c">11</td><td>Khác</td><td>BCrypt (mã hóa mật khẩu)</td></tr>
+</table>
+
+<h2>VI. SẢN PHẨM DỰ KIẾN</h2>
+<p>Sau khi hoàn thành đồ án, nhóm dự kiến bàn giao:</p>
+<table class="checks">
+  <tr><td>☑ Source Code</td><td>☑ Database</td></tr>
+  <tr><td>☑ File cài đặt/Deploy</td><td>☑ Tài khoản Demo</td></tr>
+  <tr><td>☑ Tài liệu hướng dẫn sử dụng</td><td>☑ Báo cáo đồ án</td></tr>
+  <tr><td>☑ Slide thuyết trình</td><td>☑ Video Demo</td></tr>
+  <tr><td>☐ Tài liệu kỹ thuật/API</td><td>☐ Khác: ……………………</td></tr>
+</table>
+<p><b>Mô tả sản phẩm đầu ra</b></p>
+<div class="box">
+Một ứng dụng Windows (QuanLyKhoBaoHanh.exe) đăng nhập được, lập phiếu xuất, tạo serial theo quy tắc, khóa phiếu sau hoàn tất; kèm source Visual Studio, database SQL Server, báo cáo và slide.
+</div>
+
+<h2>VII. KẾ HOẠCH THỰC HIỆN SƠ BỘ</h2>
+<table class="grid">
+  <tr>
+    <th style="width:8%">STT</th>
+    <th>Giai đoạn</th>
+    <th style="width:22%">Thời gian dự kiến</th>
+    <th>Kết quả</th>
+  </tr>
+  <tr><td class="c">1</td><td>Khảo sát bài toán</td><td>Tuần 1–2</td><td>Mô tả nghiệp vụ xuất kho / serial</td></tr>
+  <tr><td class="c">2</td><td>Phân tích yêu cầu</td><td>Tuần 2–3</td><td>Use case, phân quyền</td></tr>
+  <tr><td class="c">3</td><td>Thiết kế hệ thống</td><td>Tuần 3–4</td><td>Sơ đồ chức năng, luồng phiếu</td></tr>
+  <tr><td class="c">4</td><td>Thiết kế CSDL</td><td>Tuần 4–5</td><td>Bảng users, dmsp, phiếu, serial</td></tr>
+  <tr><td class="c">5</td><td>Thiết kế UI/UX</td><td>Tuần 5–6</td><td>Form đăng nhập, menu, phiếu xuất</td></tr>
+  <tr><td class="c">6</td><td>Lập trình</td><td>Tuần 6–11</td><td>Các phân hệ chính</td></tr>
+  <tr><td class="c">7</td><td>Tích hợp</td><td>Tuần 11–12</td><td>Nối form với SQL, khóa serial</td></tr>
+  <tr><td class="c">8</td><td>Kiểm thử</td><td>Tuần 12–13</td><td>Test trùng serial, khóa phiếu, quyền</td></tr>
+  <tr><td class="c">9</td><td>Hoàn thiện</td><td>Tuần 13–14</td><td>Sửa lỗi, đóng gói file .exe</td></tr>
+  <tr><td class="c">10</td><td>Viết báo cáo</td><td>Tuần 14–15</td><td>Báo cáo và slide</td></tr>
+  <tr><td class="c">11</td><td>Demo và bảo vệ</td><td>Tuần 15</td><td>Demo trên máy</td></tr>
+</table>
+
+<h2>VIII. PHÂN CÔNG DỰ KIẾN</h2>
+<table class="grid">
+  <tr>
+    <th style="width:8%">STT</th>
+    <th>Họ và tên</th>
+    <th>Nhiệm vụ chính</th>
+    <th style="width:16%">Tỷ lệ đóng góp</th>
+  </tr>
+  <tr>
+    <td class="c">1</td>
+    <td>Nguyễn Phi Gia Huy</td>
+    <td>Phân tích / CSDL / lập trình chính / quản lý nhóm</td>
+    <td class="c">60%</td>
+  </tr>
+  <tr>
+    <td class="c">2</td>
+    <td>Lưu Phú Nguyễn</td>
+    <td>Giao diện / kiểm thử / tài liệu</td>
+    <td class="c">40%</td>
+  </tr>
+</table>
+
+<h2>IX. DỰ KIẾN ỨNG DỤNG AI</h2>
+<h3>1. AI dự kiến sử dụng</h3>
+<table class="checks">
+  <tr><td>☑ ChatGPT</td><td>☑ Claude</td></tr>
+  <tr><td>☐ Gemini</td><td>☐ GitHub Copilot</td></tr>
+  <tr><td colspan="2">☑ Công cụ AI khác: Cursor</td></tr>
+</table>
+
+<h3>2. Các công việc dự kiến sử dụng AI hỗ trợ</h3>
+<table class="checks">
+  <tr><td>☑ Phân tích yêu cầu</td><td>☑ Thiết kế hệ thống</td></tr>
+  <tr><td>☑ Sinh mã nguồn</td><td>☑ Debug</td></tr>
+  <tr><td>☐ Code Review</td><td>☐ Viết Test Case</td></tr>
+  <tr><td>☐ Sinh dữ liệu kiểm thử</td><td>☑ Viết tài liệu</td></tr>
+  <tr><td>☐ Tối ưu mã nguồn</td><td>☐ Khác: ……………………</td></tr>
+</table>
+
+<h3>3. Cam kết sử dụng AI</h3>
+<p>Nhóm cam kết:</p>
+<ul>
+  <li>Không sử dụng AI để thay thế hoàn toàn quá trình học tập và thực hiện đồ án.</li>
+  <li>Có khả năng giải thích các thành phần chính của sản phẩm.</li>
+  <li>Kiểm tra và xác minh mã nguồn do AI đề xuất.</li>
+  <li>Chịu trách nhiệm về tính đúng đắn, an toàn và chất lượng của sản phẩm.</li>
+  <li>Ghi nhận các công cụ AI đã sử dụng trong quá trình thực hiện đồ án.</li>
+</ul>
+
+<h2>X. ĐÁNH GIÁ SƠ BỘ CỦA GIẢNG VIÊN</h2>
+<table class="grid">
+  <tr>
+    <th style="width:8%">STT</th>
+    <th>Tiêu chí</th>
+    <th style="width:14%">Đạt</th>
+    <th style="width:18%">Cần chỉnh sửa</th>
+    <th style="width:16%">Không đạt</th>
+  </tr>
+  <tr><td class="c">1</td><td>Tính phù hợp với ngành học</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+  <tr><td class="c">2</td><td>Tính thực tiễn</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+  <tr><td class="c">3</td><td>Phạm vi phù hợp với thời gian 15 tuần</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+  <tr><td class="c">4</td><td>Mức độ phù hợp với trình độ sinh viên</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+  <tr><td class="c">5</td><td>Tính khả thi về công nghệ</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+  <tr><td class="c">6</td><td>Có sản phẩm đầu ra rõ ràng</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+  <tr><td class="c">7</td><td>Có khả năng kiểm thử/đánh giá</td><td class="c">☐</td><td class="c">☐</td><td class="c">☐</td></tr>
+</table>
+
+<h2>XI. KẾT QUẢ PHÊ DUYỆT ĐỀ TÀI</h2>
+<p>☐ ĐỒNG Ý PHÊ DUYỆT</p>
+<p>☐ ĐỒNG Ý NHƯNG CẦN CHỈNH SỬA</p>
+<p>☐ KHÔNG PHÊ DUYỆT</p>
+<p>Tên đề tài sau khi phê duyệt (nếu có thay đổi): …………………………………………</p>
+
+<h2>XII. CAM KẾT CỦA SINH VIÊN</h2>
+<p>Nhóm cam kết:</p>
+<ul>
+  <li>Thực hiện đề tài đúng phạm vi đã được phê duyệt.</li>
+  <li>Tuân thủ kế hoạch và tiến độ thực hiện đồ án.</li>
+  <li>Thực hiện đầy đủ các buổi báo cáo tiến độ.</li>
+  <li>Chủ động nghiên cứu và giải quyết các vấn đề phát sinh.</li>
+  <li>Tuân thủ quy định về bản quyền, đạo văn và sử dụng AI.</li>
+  <li>Chịu trách nhiệm về phần công việc được phân công.</li>
+  <li>Đảm bảo sản phẩm cuối cùng do nhóm thực hiện và có khả năng giải thích các thành phần chính của sản phẩm.</li>
+</ul>
+
+<table class="sign">
+  <tr>
+    <td>
+      <b>Nhóm sinh viên thực hiện</b><br/>
+      <span class="small">(Ký và ghi rõ họ tên)</span>
+      <p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
+    </td>
+    <td>
+      TP. HCM, ngày 24 tháng 08 năm 2026<br/>
+      <b>Giảng viên hướng dẫn</b><br/>
+      <span class="small">(Ký và ghi rõ họ tên)</span>
+      <p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "watch": ["src"],
+  "ext": "ts",
+  "ignore": ["uploads", "node_modules", "dist"],
+  "execMap": {
+    "ts": "node -r ts-node/register"
+  }
+}
