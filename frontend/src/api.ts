@@ -475,6 +475,15 @@ export type BhKm = {
   lines?: BhKmLine[];
 };
 
+export type BhBoard = {
+  sua: number;
+  sale: number;
+  dv: number;
+  months: { label: string; sua: number; sale: number; dv: number }[];
+  steps: { label: string; count: number }[];
+  tickets: { so_ct: string; ngay: string; loai_bh?: number; ten_kh?: string; so_serial?: string; status?: string; t_tt?: number }[];
+};
+
 const BH = "/api/catalog/warranty";
 
 export const warrantyApi = {
@@ -501,6 +510,7 @@ export const warrantyApi = {
     request<{ ma_km: string; ten_km: string; tl_km: number; tien_km: number }[]>(
       `${BH}/km/match?loai=${encodeURIComponent(loai)}&ma=${encodeURIComponent(ma)}&ngay=${encodeURIComponent(ngay || "")}`
     ),
+  board: () => request<BhBoard>(`${BH}/board`),
   tickets: () => request<BhTicket[]>(`${BH}/tickets`),
   ticket: (id: string) => request<BhTicket>(`${BH}/tickets/${id}`),
   saveTicket: (item: Partial<BhTicket>) =>

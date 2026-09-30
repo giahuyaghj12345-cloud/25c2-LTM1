@@ -4,6 +4,7 @@ type Field = {
   key: string;
   label: string;
   type?: "text" | "number" | "select" | "checkbox" | "textarea";
+  wide?: boolean;
   options?: { value: string; label: string }[];
   required?: boolean;
 };
@@ -54,7 +55,7 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
   };
 
   return (
-    <section>
+    <section className="biz">
       <div className="page-head">
         <h1>{title}</h1>
       </div>
@@ -72,7 +73,7 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
           }
           if (field.type === "select") {
             return (
-              <label key={field.key}>
+              <label key={field.key} className={field.wide ? "full" : undefined}>
                 {field.label}
                 <select value={String(raw ?? "")} onChange={(e) => setField(field.key, e.target.value)} required={field.required}>
                   {(field.options || []).map((option) => (
@@ -93,7 +94,7 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
             );
           }
           return (
-            <label key={field.key}>
+            <label key={field.key} className={field.wide ? "full" : undefined}>
               {field.label}
               <input
                 type={field.type || "text"}

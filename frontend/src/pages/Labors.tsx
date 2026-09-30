@@ -10,10 +10,10 @@ export default function Labors() {
       remove={catalogApi.deleteLabor}
       empty={{ code: "", name: "", amount: 0, note: "" }}
       fields={[
-        { key: "code", label: "Mã" },
-        { key: "name", label: "Tên tiền công" },
-        { key: "amount", label: "Số tiền", type: "number" },
-        { key: "note", label: "Ghi chú" },
+        { key: "code", label: "Mã tiền công", wide: true },
+        { key: "name", label: "Tên tiền công", wide: true },
+        { key: "amount", label: "Đơn giá (VAT)", type: "number" },
+        { key: "note", label: "Ghi chú", wide: true },
       ]}
       columns={[
         { key: "code", label: "Mã" },

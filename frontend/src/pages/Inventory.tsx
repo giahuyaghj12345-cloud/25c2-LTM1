@@ -15,7 +15,7 @@ export default function Inventory() {
   }, []);
 
   return (
-    <section>
+    <section className="biz">
       <div className="page-head">
         <h1>Tồn kho sản phẩm</h1>
         <p className="muted">Các sản phẩm được đánh dấu theo dõi tồn kho</p>

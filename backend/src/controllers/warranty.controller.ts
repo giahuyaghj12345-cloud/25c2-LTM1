@@ -894,3 +894,65 @@ export async function matchKm(req: AuthRequest, res: Response) {
   );
   res.json(rows);
 }
+
+export async function warrantyBoard(_req: AuthRequest, res: Response) {
+  const rows = await AppDataSource.query(
+    `SELECT TOP 8 so_ct, CONVERT(varchar(10), ngay_ct, 23) AS ngay, loai_bh, ten_kh, so_serial, status, t_tt
+     FROM dbo.bh_phieu
+     WHERE ISNULL(status, N'') <> N'huy'
+     ORDER BY ngay_ct DESC, so_ct DESC`
+  );
+  const counted = await AppDataSource.query(
+    `SELECT loai_bh, CONVERT(varchar(7), ngay_ct, 23) AS thang
+     FROM dbo.bh_phieu
+     WHERE ISNULL(status, N'') <> N'huy'`
+  ) as { loai_bh?: number; thang?: string }[];
+  const steps = await AppDataSource.query(
+    `SELECT
+       (SELECT COUNT(*) FROM dbo.bh_baogia WHERE status = N'da_duyet') AS bao_gia,
+       (SELECT COUNT(*) FROM dbo.bh_phieu WHERE ISNULL(status, N'') <> N'huy') AS phieu,
+       (SELECT COUNT(*) FROM dbo.bh_kho WHERE status = N'xac_nhan') AS kho,
+       (SELECT COUNT(*) FROM dbo.bh_thu) AS thu,
+       (SELECT COUNT(*) FROM dbo.bh_hoadon) AS hoa_don`
+  );
+
+  const today = new Date();
+  const months = Array.from({ length: 8 }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - (7 - index), 1);
+    return {
+      key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+      label: `Th${date.getMonth() + 1}`,
+      sua: 0,
+      sale: 0,
+      dv: 0,
+    };
+  });
+  const monthOf = new Map(months.map((item) => [item.key, item]));
+  const loaiKey = (loai: number) => (loai === 2 ? "sale" : loai === 3 ? "dv" : "sua");
+  let sua = 0;
+  let sale = 0;
+  let dv = 0;
+  for (const row of counted) {
+    const key = loaiKey(Number(row.loai_bh || 1));
+    if (key === "sua") sua += 1;
+    if (key === "sale") sale += 1;
+    if (key === "dv") dv += 1;
+    const bucket = monthOf.get(String(row.thang || ""));
+    if (bucket) bucket[key] += 1;
+  }
+  const step = steps[0] || {};
+  res.json({
+    sua,
+    sale,
+    dv,
+    months,
+    steps: [
+      { label: "Báo giá", count: Number(step.bao_gia || 0) },
+      { label: "Phiếu DV", count: Number(step.phieu || 0) },
+      { label: "Kho BH", count: Number(step.kho || 0) },
+      { label: "Thu tiền", count: Number(step.thu || 0) },
+      { label: "Hóa đơn", count: Number(step.hoa_don || 0) },
+    ],
+    tickets: rows,
+  });
+}

@@ -6,7 +6,7 @@ import {
   cancelTicket, completeTicket, getInvoice, getQuote, getReceipt, getTicket, getWarehouse,
   listInvoices, listQuotes, listReceipts, listTickets, listWarehouse, lookupSerialForTicket,
   changeSerialSituation, createReplacementSerial, postInvoice, postQuote, postTicket, postWarehouse, saveInvoice, saveQuote, saveReceipt, saveTicket, saveWarehouse, suggestWarranty, traceSerial,
-  listKm, getKm, saveKm, setKmStatus, matchKm,
+  listKm, getKm, saveKm, setKmStatus, matchKm, warrantyBoard,
 } from "../controllers/warranty.controller";
 
 const router = Router();
@@ -61,6 +61,7 @@ router.get("/warranty/suggest", suggestWarranty);
 router.get("/warranty/serial", lookupSerialForTicket);
 router.post("/warranty/serial/situation", changeSerialSituation);
 router.post("/warranty/serial/replace", createReplacementSerial);
+router.get("/warranty/board", warrantyBoard);
 router.get("/warranty/tickets", listTickets);
 router.get("/warranty/tickets/:id", getTicket);
 router.post("/warranty/tickets", saveTicket);

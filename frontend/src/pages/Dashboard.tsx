@@ -12,7 +12,9 @@ import warrantyWhIcon from "../assets/icons/bh-warehouse.png";
 import receiptIcon from "../assets/icons/bh-receipt.png";
 import invoiceIcon from "../assets/icons/bh-invoice.png";
 import lookupIcon from "../assets/icons/bh-lookup.png";
+import promoIcon from "../assets/icons/bh-promo.png";
 import { canUseSerial } from "../api";
+import BhBoard from "../components/BhBoard";
 
 type Tile = {
   to: string;
@@ -55,6 +57,8 @@ export default function Dashboard() {
         <h1>Tổng quan</h1>
         <p className="muted">Chọn nhóm chức năng, rồi bấm icon để vào trang</p>
       </div>
+
+      <BhBoard />
 
       <div className="dash-section">
         <h2>
@@ -102,7 +106,7 @@ export default function Dashboard() {
             { to: "/warranty/receipts", label: "Thu tiền BH", image: receiptIcon },
             { to: "/warranty/invoices", label: "Hóa đơn BH", image: invoiceIcon },
             { to: "/warranty/lookup", label: "Tra cứu serial", image: lookupIcon },
-            { to: "/warranty/promotions", label: "Khuyến mãi BH", Icon: IconCustomer, tone: "kh" },
+            { to: "/warranty/promotions", label: "Khuyến mãi BH", image: promoIcon },
           ]}
         />
       </div>

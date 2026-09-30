@@ -20,13 +20,13 @@ function readInstancePort(instanceName: string): number | undefined {
   try {
     const names = execSync(
       `reg query "HKLM\\SOFTWARE\\Microsoft\\Microsoft SQL Server\\Instance Names\\SQL" /v ${instanceName}`,
-      { encoding: "utf8" }
+      { encoding: "utf8", windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
     );
     const instanceId = names.split(/\s+/).find((part) => /^MSSQL\d+\./i.test(part));
     if (!instanceId) return;
     const ipAll = execSync(
       `reg query "HKLM\\SOFTWARE\\Microsoft\\Microsoft SQL Server\\${instanceId}\\MSSQLServer\\SuperSocketNetLib\\Tcp\\IPAll"`,
-      { encoding: "utf8" }
+      { encoding: "utf8", windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
     );
     const staticPort = ipAll.match(/TcpPort\s+REG_SZ\s+(\d+)/);
     if (staticPort?.[1]) return Number(staticPort[1]);

@@ -107,7 +107,7 @@ export default function Products() {
   };
 
   return (
-    <section>
+    <section className="biz">
       <div className="page-head">
         <h1>Danh mục sản phẩm{editing ? " — đang sửa" : ""}</h1>
       </div>

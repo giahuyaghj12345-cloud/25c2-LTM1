@@ -4,7 +4,19 @@ import { useAuth } from "../auth";
 import { ROLE_LABELS, authApi, canUseSerial, type AppNotification } from "../api";
 import ThemeToggle from "./ThemeToggle";
 import catalogIcon from "../assets/icons/catalog.png";
+import productIcon from "../assets/icons/dm-product.png";
+import laborIcon from "../assets/icons/dm-labor.png";
 import warehouseIcon from "../assets/icons/warehouse.png";
+import inventoryIcon from "../assets/icons/dm-inventory.png";
+import serialIcon from "../assets/icons/dm-serial.png";
+import warrantyIcon from "../assets/icons/bh-menu.png";
+import quoteIcon from "../assets/icons/bh-quote.png";
+import ticketIcon from "../assets/icons/bh-ticket.png";
+import warrantyWhIcon from "../assets/icons/bh-warehouse.png";
+import receiptIcon from "../assets/icons/bh-receipt.png";
+import invoiceIcon from "../assets/icons/bh-invoice.png";
+import lookupIcon from "../assets/icons/bh-lookup.png";
+import promoIcon from "../assets/icons/bh-promo.png";
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString("vi-VN", {
@@ -39,42 +51,10 @@ function IconShield() {
   );
 }
 
-function IconBox() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 7.5 12 3l9 4.5-9 4.5zM3 9.2v7.3L12 21V11.7zm18 0-9 4.5V21l9-4.5z" />
-    </svg>
-  );
-}
-
-function IconCoin() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-1.1A3.9 3.9 0 0 1 8 12h2a2 2 0 0 0 2 2 2 2 0 0 0 0-4h-1V8h1A3.9 3.9 0 0 1 16 12a3.9 3.9 0 0 1-3 3.9z" />
-    </svg>
-  );
-}
-
-function IconDoc() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 2h9l5 5v15H6zm8 1.5V8h4.5z" />
-    </svg>
-  );
-}
-
 function IconBell() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 22a2.2 2.2 0 0 0 2.2-2H9.8A2.2 2.2 0 0 0 12 22zm7-6V11a7 7 0 1 0-14 0v5L3 18v1h18v-1z" />
-    </svg>
-  );
-}
-
-function IconSerial() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 6h2v12H4zm4 0h1v12H8zm3 0h2v12h-2zm4 0h1v12h-1zm3 0h2v12h-2z" />
     </svg>
   );
 }
@@ -211,10 +191,12 @@ export default function Layout() {
   };
 
   const initial = (user?.username || "U").slice(0, 1).toUpperCase();
+  const railClosed = isMobile ? !menuOpen : collapsed;
 
   return (
     <div className={`app-shell ${!isMobile && collapsed ? "collapsed" : ""} ${menuOpen ? "menu-open" : ""}`}>
       {menuOpen && <button type="button" className="menu-backdrop" aria-label="Đóng menu" onClick={() => setMenuOpen(false)} />}
+      <div className="sidebar-wrap">
       <aside className="sidebar">
         <NavLink to="/profile" className="sidebar-avatar" title={user?.username} onClick={() => isMobile && setMenuOpen(false)}>
           <span className="avatar-mini sidebar-avt" style={user?.avatar ? { backgroundImage: `url(${user.avatar})` } : undefined}>
@@ -254,11 +236,11 @@ export default function Layout() {
             {catalogOpen && (
               <div className="nav-sub">
                 <NavLink to="/products" title="Danh mục sản phẩm" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setCatalogOpen(false))}>
-                  <IconBox />
+                  <img className="nav-png" src={productIcon} alt="" />
                   <span>Danh mục sản phẩm</span>
                 </NavLink>
                 <NavLink to="/labors" title="Danh mục tiền công" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setCatalogOpen(false))}>
-                  <IconCoin />
+                  <img className="nav-png" src={laborIcon} alt="" />
                   <span>Danh mục tiền công</span>
                 </NavLink>
                 <NavLink to="/customers" title="Danh mục khách hàng" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setCatalogOpen(false))}>
@@ -282,11 +264,11 @@ export default function Layout() {
             {warehouseOpen && (
               <div className="nav-sub">
                 <NavLink to="/stock-outs" title="Phiếu xuất kho" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarehouseOpen(false))}>
-                  <IconDoc />
+                  <img className="nav-png" src={warehouseIcon} alt="" />
                   <span>Phiếu xuất kho</span>
                 </NavLink>
                 <NavLink to="/inventory" title="Tồn kho sản phẩm" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarehouseOpen(false))}>
-                  <IconBox />
+                  <img className="nav-png" src={inventoryIcon} alt="" />
                   <span>Tồn kho sản phẩm</span>
                 </NavLink>
               </div>
@@ -294,37 +276,46 @@ export default function Layout() {
           </div>
           {canUseSerial(user) && (
             <NavLink to="/serials" title="Tạo số Serial" onClick={() => isMobile && setMenuOpen(false)}>
-              <IconSerial />
+              <img className="nav-png" src={serialIcon} alt="" />
               <span>3. Tạo số Serial</span>
             </NavLink>
           )}
           <div ref={warrantyRef} className={`nav-group ${warrantyOpen ? "open" : ""} ${warrantyActive ? "current" : ""}`}>
             <button type="button" className="nav-group-btn" title="Bảo hành" onClick={() => setWarrantyOpen((value) => !value)}>
-              <IconShield />
+              <img className="nav-png" src={warrantyIcon} alt="" />
               <span>4. Bảo hành</span>
               <i className="chevron" aria-hidden="true" />
             </button>
             {warrantyOpen && (
               <div className="nav-sub">
-                <NavLink to="/warranty/quotes" title="Báo giá BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconDoc /><span>Báo giá BH</span></NavLink>
-                <NavLink to="/warranty/tickets" title="Phiếu bảo hành" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconDoc /><span>Phiếu bảo hành</span></NavLink>
-                <NavLink to="/warranty/warehouse" title="Kho bảo hành" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconBox /><span>Kho bảo hành</span></NavLink>
-                <NavLink to="/warranty/receipts" title="Thu phụ tùng BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconCoin /><span>Thu tiền BH</span></NavLink>
-                <NavLink to="/warranty/invoices" title="Hóa đơn BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconDoc /><span>Hóa đơn BH</span></NavLink>
-                <NavLink to="/warranty/lookup" title="Tra cứu serial" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconSerial /><span>Tra cứu serial</span></NavLink>
-                <NavLink to="/warranty/promotions" title="Khuyến mãi BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><IconCoin /><span>Khuyến mãi BH</span></NavLink>
+                <NavLink to="/warranty/quotes" title="Báo giá BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={quoteIcon} alt="" /><span>Báo giá BH</span></NavLink>
+                <NavLink to="/warranty/tickets" title="Phiếu bảo hành" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={ticketIcon} alt="" /><span>Phiếu bảo hành</span></NavLink>
+                <NavLink to="/warranty/warehouse" title="Kho bảo hành" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={warrantyWhIcon} alt="" /><span>Kho bảo hành</span></NavLink>
+                <NavLink to="/warranty/receipts" title="Thu phụ tùng BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={receiptIcon} alt="" /><span>Thu tiền BH</span></NavLink>
+                <NavLink to="/warranty/invoices" title="Hóa đơn BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={invoiceIcon} alt="" /><span>Hóa đơn BH</span></NavLink>
+                <NavLink to="/warranty/lookup" title="Tra cứu serial" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={lookupIcon} alt="" /><span>Tra cứu serial</span></NavLink>
+                <NavLink to="/warranty/promotions" title="Khuyến mãi BH" onClick={() => (isMobile ? setMenuOpen(false) : collapsed && setWarrantyOpen(false))}><img className="nav-png" src={promoIcon} alt="" /><span>Khuyến mãi BH</span></NavLink>
               </div>
             )}
           </div>
         </nav>
       </aside>
+      <div className="sidebar-hot">
+        <button
+          type="button"
+          className="sidebar-edge"
+          onClick={toggleSidebar}
+          aria-label={railClosed ? "Mở menu" : "Đóng menu"}
+          title={railClosed ? "Mở menu" : "Đóng menu"}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d={railClosed ? "M9 6l6 6-6 6" : "M15 6l-6 6 6 6"} />
+          </svg>
+        </button>
+      </div>
+      </div>
       <div className="main">
         <header className="topbar">
-          <div className="topbar-left">
-            <button type="button" className="ghost icon-btn" onClick={toggleSidebar}>
-              {isMobile ? (menuOpen ? "Đóng menu" : "Menu") : collapsed ? "Hiện menu" : "Ẩn menu"}
-            </button>
-          </div>
           <div className="topbar-right">
             <ThemeToggle />
             <div className="notify-wrap" ref={noticeRef}>

@@ -1,0 +1,14 @@
+{
+  "name": "quan-ly-kho-bao-hanh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ứng dụng desktop Quản lý kho và bảo hành",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "desktop": "npm run build --prefix ../frontend && electron ."
+  },
+  "devDependencies": {
+    "electron": "^35.7.5"
+  }
+}

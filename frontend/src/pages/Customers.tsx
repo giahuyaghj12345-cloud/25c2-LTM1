@@ -13,7 +13,7 @@ export default function Customers() {
       empty={{ code: "", name: "", address: "", phone: "", email: "", taxCode: "", idCard: "", customerGroup: "dealer", note: "" }}
       fields={[
         { key: "code", label: "Mã khách" },
-        { key: "name", label: "Tên khách" },
+        { key: "name", label: "Tên khách", wide: true },
         { key: "customerGroup", label: "Nhóm khách", type: "select", options: [
           { value: "dealer", label: "Đại lý (BH 2 năm 3 tháng)" },
           { value: "retail", label: "Khách lẻ (BH 2 năm)" },
@@ -22,8 +22,8 @@ export default function Customers() {
         { key: "email", label: "Email" },
         { key: "taxCode", label: "MST" },
         { key: "idCard", label: "CCCD" },
-        { key: "address", label: "Địa chỉ" },
-        { key: "note", label: "Ghi chú" },
+        { key: "address", label: "Địa chỉ", wide: true },
+        { key: "note", label: "Ghi chú", wide: true },
       ]}
       columns={[
         { key: "code", label: "Mã" },

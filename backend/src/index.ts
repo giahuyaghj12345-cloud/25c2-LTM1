@@ -17,9 +17,21 @@ app.use("/api/catalog", catalogRoutes);
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, db: AppDataSource.isInitialized });
 });
-app.get("/", (_req, res) => {
+app.get("/", (_req, res, next) => {
+  if (process.env.SERVE_WEB === "1") return next();
   res.json({ ok: true, service: "backend", db: AppDataSource.isInitialized });
 });
+
+const webDir = path.resolve(__dirname, "../../frontend/dist");
+if (process.env.SERVE_WEB === "1") {
+  app.use(express.static(webDir));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api") || req.path.startsWith("/uploads")) return next();
+    res.sendFile(path.join(webDir, "index.html"), (error) => {
+      if (error) next();
+    });
+  });
+}
 
 const PORT = Number(process.env.PORT) || 5000;
 let connecting = false;
