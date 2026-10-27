@@ -73,9 +73,9 @@ public class FrmProductEdit : Form
         txtUnit.Text = "Cái";
         txtMin.Text = "0";
         txtMax.Text = "0";
-        txtQty.Text = "0,000";
-        txtQty.ReadOnly = true;
-        txtQty.ForeColor = Ui.Danger;
+        txtQty.Text = "0";
+        txtQty.ReadOnly = false;
+        txtQty.ForeColor = Ui.Ink;
         txtCode.ReadOnly = true;
         txtSearch.ReadOnly = true;
 
@@ -139,7 +139,7 @@ public class FrmProductEdit : Form
         F(fields, "Tài khoản kho", txtTkVt, 160);
         F(fields, "Thuế suất", txtTax, 100);
         F(fields, "Sửa tài khoản kho", cboEditTk, 160);
-        F(fields, "Số tồn", txtQty, 120);
+        F(fields, "Tồn hiện tại", txtQty, 120);
         F(fields, "Tài khoản doanh thu", txtDt, 180);
         F(fields, "Tài khoản hàng bán bị trả lại", txtTl, 200);
         F(fields, "Tài khoản doanh thu nội bộ", txtDtnb, 200);
@@ -214,6 +214,7 @@ public class FrmProductEdit : Form
         chkShelf.Checked = Bit(row, "vt_ke");
         chkStock.Checked = Bit(row, "vt_ton_kho", true);
         chkLot.Checked = Bit(row, "lot_yn");
+        txtQty.Text = Dec(ToDec(row.Table.Columns.Contains("sl_ton") ? row["sl_ton"] : 0m));
         cboCost.SelectedIndex = Clamp(Int(row, "gia_ton", 1), 0, 3);
         txtKind.Text = Str(row, "loai_vt");
         txtTkVt.Text = Str(row, "tk_vt");
@@ -286,6 +287,7 @@ public class FrmProductEdit : Form
                 ["nhieu_dvt"] = chkMulti.Checked,
                 ["vt_ke"] = chkShelf.Checked,
                 ["vt_ton_kho"] = chkStock.Checked,
+                ["sl_ton"] = Num(txtQty.Text),
                 ["lot_yn"] = chkLot.Checked,
                 ["gia_ton"] = cboCost.SelectedIndex,
                 ["loai_vt"] = txtKind.Text.Trim(),
@@ -365,4 +367,6 @@ public class FrmProductEdit : Form
         if (v == null || v == DBNull.Value) return 0;
         return Convert.ToDecimal(v);
     }
+
+    static string Dec(decimal v) => v.ToString("0.####");
 }

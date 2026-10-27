@@ -19,8 +19,9 @@ import WarrantyWarehouse from "./pages/WarrantyWarehouse";
 import WarrantyReceipts from "./pages/WarrantyReceipts";
 import WarrantyInvoices from "./pages/WarrantyInvoices";
 import WarrantyLookup from "./pages/WarrantyLookup";
+import WarrantySerialReport from "./pages/WarrantySerialReport";
 import WarrantyPromotions from "./pages/WarrantyPromotions";
-import { canUseSerial } from "./api";
+import { canAccessCatalog, canAccessWarehouse, canAccessWarranty, canUseSerial, canWriteWarranty } from "./api";
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -38,6 +39,30 @@ function AdminOnly({ children }: { children: ReactNode }) {
 function SerialOnly({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (!canUseSerial(user)) return <Navigate to="/" replace />;
+  return children;
+}
+
+function CatalogOnly({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  if (!canAccessCatalog(user)) return <Navigate to="/" replace />;
+  return children;
+}
+
+function WarehouseOnly({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  if (!canAccessWarehouse(user)) return <Navigate to="/" replace />;
+  return children;
+}
+
+function WarrantyOnly({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  if (!canAccessWarranty(user)) return <Navigate to="/" replace />;
+  return children;
+}
+
+function WarrantyWriteOnly({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  if (!canWriteWarranty(user)) return <Navigate to="/warranty/lookup" replace />;
   return children;
 }
 
@@ -78,11 +103,11 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="materials" element={<Navigate to="/products" replace />} />
-        <Route path="products" element={<Products />} />
-        <Route path="labors" element={<Labors />} />
-        <Route path="customers" element={<Customers />} />
-        <Route path="stock-outs" element={<StockOuts />} />
-        <Route path="inventory" element={<Inventory />} />
+        <Route path="products" element={<CatalogOnly><Products /></CatalogOnly>} />
+        <Route path="labors" element={<CatalogOnly><Labors /></CatalogOnly>} />
+        <Route path="customers" element={<CatalogOnly><Customers /></CatalogOnly>} />
+        <Route path="stock-outs" element={<WarehouseOnly><StockOuts /></WarehouseOnly>} />
+        <Route path="inventory" element={<WarehouseOnly><Inventory /></WarehouseOnly>} />
         <Route
           path="serials"
           element={
@@ -91,13 +116,14 @@ export default function App() {
             </SerialOnly>
           }
         />
-        <Route path="warranty/quotes" element={<WarrantyQuotes />} />
-        <Route path="warranty/tickets" element={<WarrantyTickets />} />
-        <Route path="warranty/warehouse" element={<WarrantyWarehouse />} />
-        <Route path="warranty/receipts" element={<WarrantyReceipts />} />
-        <Route path="warranty/invoices" element={<WarrantyInvoices />} />
-        <Route path="warranty/lookup" element={<WarrantyLookup />} />
-        <Route path="warranty/promotions" element={<WarrantyPromotions />} />
+        <Route path="warranty/quotes" element={<WarrantyWriteOnly><WarrantyQuotes /></WarrantyWriteOnly>} />
+        <Route path="warranty/tickets" element={<WarrantyWriteOnly><WarrantyTickets /></WarrantyWriteOnly>} />
+        <Route path="warranty/warehouse" element={<WarrantyWriteOnly><WarrantyWarehouse /></WarrantyWriteOnly>} />
+        <Route path="warranty/receipts" element={<WarrantyWriteOnly><WarrantyReceipts /></WarrantyWriteOnly>} />
+        <Route path="warranty/invoices" element={<WarrantyWriteOnly><WarrantyInvoices /></WarrantyWriteOnly>} />
+        <Route path="warranty/lookup" element={<WarrantyOnly><WarrantyLookup /></WarrantyOnly>} />
+        <Route path="warranty/serial-report" element={<WarrantyOnly><WarrantySerialReport /></WarrantyOnly>} />
+        <Route path="warranty/promotions" element={<WarrantyWriteOnly><WarrantyPromotions /></WarrantyWriteOnly>} />
         <Route
           path="permissions"
           element={
@@ -106,6 +132,7 @@ export default function App() {
             </AdminOnly>
           }
         />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   );

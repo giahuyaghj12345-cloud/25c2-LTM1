@@ -73,7 +73,7 @@ export default function BhBoard() {
   if (!data) return <p className="muted">Đang tải số liệu bảo hành...</p>;
 
   const cards = [
-    { label: "Sửa chữa", value: data.sua, color: COLORS.sua, values: data.months.map((item) => item.sua) },
+    { label: "Sửa / BD / BH / Lắp", value: data.sua, color: COLORS.sua, values: data.months.map((item) => item.sua) },
     { label: "Sale 1 đổi 1", value: data.sale, color: COLORS.sale, values: data.months.map((item) => item.sale) },
     { label: "DV 1 đổi 1", value: data.dv, color: COLORS.dv, values: data.months.map((item) => item.dv) },
   ];
@@ -107,7 +107,7 @@ export default function BhBoard() {
           <h3>Phiếu theo loại dịch vụ</h3>
           <Trend months={data.months} />
           <p className="bh-legend">
-            <i style={{ background: COLORS.sua }} /> Sửa chữa
+            <i style={{ background: COLORS.sua }} /> Sửa / BD / BH / Lắp
             <i style={{ background: COLORS.sale }} /> Sale 1 đổi 1
             <i style={{ background: COLORS.dv }} /> DV 1 đổi 1
           </p>

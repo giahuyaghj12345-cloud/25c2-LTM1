@@ -5,7 +5,8 @@ import BhFlow from "../components/BhFlow";
 import BhSuggest from "../components/BhSuggest";
 import { day, MA_GD, money, printVoucher } from "../warranty";
 
-const posted = ["ghi_so", "xac_nhan", "dang_sua", "hoan_tat", "da_giao"];
+/** Chỉ phiếu còn thao tác kho được (backend từ chối hoan_tat). */
+const posted = ["ghi_so", "xac_nhan", "dang_sua"];
 
 const blank = (): Partial<BhWarehouse> => ({
   ma_gd: 7,
@@ -46,7 +47,7 @@ export default function WarrantyWarehouse() {
   const refresh = async () => {
     const [list, phieu, suggest] = await Promise.all([warrantyApi.warehouses(), warrantyApi.tickets(), warrantyApi.suggest()]);
     setCustomers(suggest.customers);
-    const ready = phieu.filter((item) => posted.includes(item.status));
+    const ready = phieu.filter((item) => posted.includes(item.status) && Number(item.hoan_tat) !== 1);
     setRows(list);
     setTickets(ready);
     const phieuId = params.get("phieu");

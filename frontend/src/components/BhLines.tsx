@@ -99,7 +99,7 @@ export default function BhLines({ title, loai, lines, disabled, ngay, products, 
                   <td><input disabled value={line.ten} readOnly /></td>
                   <td><input disabled={disabled} value={line.dvt || ""} onChange={(e) => patch(index, { dvt: e.target.value })} /></td>
                   <td><input disabled={disabled} type="number" min={0} step="0.01" value={line.so_luong} onChange={(e) => patch(index, { so_luong: Number(e.target.value) })} /></td>
-                  <td><input disabled={disabled || loai === "pt"} type="number" min={0} value={line.gia} onChange={(e) => patch(index, { gia: Number(e.target.value) })} /></td>
+                  <td><input disabled={disabled} type="number" min={0} value={line.gia} onChange={(e) => patch(index, { gia: Number(e.target.value) })} /></td>
                   <td>{money(calc.thanh)}</td>
                   <td><KmCell line={line} loai={loai} ngay={ngay} disabled={disabled} onApply={(part) => patch(index, part)} /></td>
                   <td><input disabled={disabled || Boolean(line.ma_km)} type="number" min={0} max={100} value={line.tl_ck || 0} onChange={(e) => patch(index, { tl_ck: Number(e.target.value) })} /></td>

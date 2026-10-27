@@ -6,7 +6,7 @@ import BhFlow from "../components/BhFlow";
 import BhLines from "../components/BhLines";
 import BhSuggest from "../components/BhSuggest";
 import BhTotals from "../components/BhTotals";
-import { day, LOAI_BH, localNow, money, printVoucher, sumLines, TICKET_STATUS } from "../warranty";
+import { day, isRepairLoai, isSwapLoai, LOAI_BH, localNow, money, printVoucher, sumLines, TICKET_STATUS } from "../warranty";
 
 const blank = (): Partial<BhTicket> & { lines: BhLine[] } => ({
   ngay_ct: day(),
@@ -30,17 +30,22 @@ export default function WarrantyTickets() {
   const [labors, setLabors] = useState<LaborCost[]>([]);
   const [customers, setCustomers] = useState<{ ma_kh: string; ten_kh?: string; dia_chi?: string; dien_thoai?: string; email?: string; mst?: string; cccd?: string }[]>([]);
   const [serials, setSerials] = useState<{ so_serial: string; ma_kh?: string; ten_kh?: string; ma_sp?: string; ten_sp?: string; so_batch?: string }[]>([]);
+  const [staff, setStaff] = useState<{ username: string; role: string }[]>([]);
   const [form, setForm] = useState(blank());
   const [editing, setEditing] = useState(true);
   const [error, setError] = useState("");
-  const locked = form.status !== "nhap" || Number(form.hoan_tat) === 1;
+  const finished = Number(form.hoan_tat) === 1 || form.status === "hoan_tat";
+  const cancelled = form.status === "huy";
+  const locked = finished || cancelled;
   const disabled = !editing || locked;
   const sum = sumLines(form.lines);
   const set = (part: Partial<BhTicket>) => setForm({ ...form, ...part });
   const loai = Number(form.loai_bh) || 1;
-  const loai11 = loai === 2 || loai === 3;
-  const finished = Number(form.hoan_tat) === 1 || form.status === "hoan_tat" || form.status === "da_giao";
-  const canKho = Boolean(form.id) && posted.includes(form.status || "") && !finished;
+  const loai11 = isSwapLoai(loai);
+  const loaiSua = isRepairLoai(loai);
+  const canKho = Boolean(form.id) && posted.includes(form.status || "") && !finished && !cancelled;
+  const postedOk = posted.includes(form.status || "");
+  const staffItems = staff.map((item) => ({ value: item.username, text: item.role, raw: item }));
 
   const refresh = async () => {
     const [list, bg, items, costs, hints] = await Promise.all([
@@ -52,10 +57,23 @@ export default function WarrantyTickets() {
     setLabors(costs);
     setCustomers(hints.customers);
     setSerials(hints.serials);
+    setStaff(hints.staff || []);
   };
 
   useEffect(() => {
-    void refresh().catch((err) => setError(err instanceof Error ? err.message : "Không tải phiếu"));
+    void refresh()
+      .then(async () => {
+        const bg = params.get("bg");
+        if (bg) {
+          try {
+            await pullQuote(bg);
+            setEditing(true);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Không kéo được báo giá");
+          }
+        }
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Không tải phiếu"));
     const serial = params.get("serial");
     if (!serial) return;
     void warrantyApi.serial(serial).then((info) => setForm((current) => ({
@@ -135,6 +153,26 @@ export default function WarrantyTickets() {
     }
   };
 
+  /** GGV: Nhận = Lưu (action 10) + Ghi sổ (action 30). */
+  const onNhan = async () => {
+    setError("");
+    try {
+      const payload = { ...form, tg_tiep_nhan: form.tg_tiep_nhan || localNow() };
+      let saved = form;
+      if (form.status === "nhap" || !form.id) {
+        saved = await warrantyApi.saveTicket(payload);
+      }
+      if (saved.status === "nhap" && saved.id) {
+        saved = await warrantyApi.postTicket(saved.id);
+      }
+      setForm({ ...saved, ngay_ct: day(saved.ngay_ct), lines: saved.lines || [] });
+      setEditing(false);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không nhận được phiếu");
+    }
+  };
+
   const act = async (job: Promise<BhTicket>) => {
     try {
       const doc = await job;
@@ -176,24 +214,43 @@ export default function WarrantyTickets() {
           <button type="button" disabled={!form.id || locked} onClick={() => setEditing(true)}>Sửa</button>
           <button type="submit" form="ph-form" disabled={disabled}>Lưu</button>
           <button type="button" disabled={!form.id || form.status !== "nhap"} onClick={() => void act(warrantyApi.postTicket(form.id!))}>Ghi sổ</button>
-          <button type="button" disabled={!editing} onClick={() => set({ tg_tiep_nhan: localNow() })}>Nhận</button>
-          <button type="button" disabled={!form.id || Number(form.hoan_tat) === 1 || !posted.includes(form.status || "")} onClick={() => void act(warrantyApi.completeTicket(form.id!))}>Hoàn tất SC</button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={locked || (Boolean(form.id) && form.status !== "nhap")}
+            title="GGV: Lưu + Ghi sổ phiếu"
+            onClick={() => void onNhan()}
+          >
+            Nhận
+          </button>
+          <button type="button" disabled={!form.id || Number(form.hoan_tat) === 1 || !postedOk} onClick={() => { if (window.confirm("Xác nhận hoàn tất sửa chữa?")) void act(warrantyApi.completeTicket(form.id!)); }}>Hoàn tất SC</button>
           <button type="button" disabled={!form.id} onClick={printDoc}>In phiếu</button>
-          <button type="button" disabled={!form.id || !posted.includes(form.status || "") || Number(form.xuat_hd) !== 1} onClick={() => navigate(`/warranty/invoices?phieu=${form.id}`)}>Xuất HĐ GTGT</button>
-          {user?.role === "admin" && <button type="button" className="danger" disabled={!form.id || Number(form.hoan_tat) === 1} onClick={() => void act(warrantyApi.cancelTicket(form.id!))}>Hủy phiếu</button>}
+          <button type="button" disabled={!form.id || !postedOk || Number(form.xuat_hd) !== 1} onClick={() => navigate(`/warranty/invoices?phieu=${form.id}`)}>Xuất HĐ GTGT</button>
+          {user?.role === "admin" && <button type="button" className="danger" disabled={!form.id || Number(form.hoan_tat) === 1 || postedOk} onClick={() => void act(warrantyApi.cancelTicket(form.id!))}>Hủy phiếu</button>}
           <select disabled={!editing} defaultValue="" onChange={(e) => { if (e.target.value) void pullQuote(e.target.value); e.target.value = ""; }}>
             <option value="">Chọn báo giá đã ghi sổ</option>
             {quotes.map((quote) => <option key={quote.id} value={quote.id}>{quote.so_ct} — {quote.ten_kh}</option>)}
           </select>
         </div>
       </div>
-      {Boolean(form.id) && posted.includes(form.status || "") && (
+      {Boolean(form.id) && (
+        <div className="wf-strip" aria-label="Tiến độ quy trình GGV">
+          <span className={postedOk ? "on" : ""}>Ghi sổ</span>
+          <span className={Number(form.da_xuat) === 1 ? "on" : ""}>Xuất kho</span>
+          <span className={Number(form.da_nhap) === 1 ? "on" : ""}>Nhập kho</span>
+          <span className={Number(form.da_giao) === 1 ? "on" : ""}>Giao KH</span>
+          <span className={Number(form.da_thu) === 1 ? "on" : ""}>Thu tiền</span>
+          <span className={Number(form.da_hd) === 1 ? "on" : ""}>Xuất HĐ</span>
+          <span className={Number(form.hoan_tat) === 1 ? "on" : ""}>Hoàn tất</span>
+        </div>
+      )}
+      {Boolean(form.id) && postedOk && (
         <div className="desk-ops" style={{ marginBottom: 8 }}>
           {canKho && <button type="button" onClick={() => kho(7)}>Xuất kho PT BH</button>}
           {canKho && <button type="button" disabled={!loai11} onClick={() => kho(8)}>Xuất SP 1 đổi 1</button>}
           {canKho && <button type="button" disabled={!loai11} onClick={() => kho(11, "nhap")}>Nhập SP serial cũ</button>}
-          {canKho && <button type="button" disabled={Number(form.da_nhap) === 1 || Number(form.da_giao) === 1} onClick={() => kho(10, "nhap")}>Nhập kho SP sau BH</button>}
-          {canKho && <button type="button" disabled={loai11 || Number(form.da_nhap) !== 1 || Number(form.da_giao) === 1} onClick={() => kho(10, "xuat")}>Xuất kho giao KH</button>}
+          {canKho && <button type="button" disabled={!loaiSua || Number(form.da_nhap) === 1 || Number(form.da_giao) === 1} onClick={() => kho(10, "nhap")}>Nhập kho SP sau BH</button>}
+          {canKho && <button type="button" disabled={!loaiSua || Number(form.da_nhap) !== 1 || Number(form.da_giao) === 1} onClick={() => kho(10, "xuat")}>Xuất kho giao KH</button>}
           <button type="button" onClick={() => navigate(`/warranty/receipts?phieu=${form.id}`)}>Thu ngân thu tiền</button>
         </div>
       )}
@@ -223,6 +280,9 @@ export default function WarrantyTickets() {
                 <option value={1}>1 - Sửa chữa</option>
                 <option value={2}>2 - Sale 1 đổi 1</option>
                 <option value={3}>3 - DV 1 đổi 1</option>
+                <option value={4}>4 - Bảo dưỡng</option>
+                <option value={5}>5 - Bảo hành</option>
+                <option value={6}>6 - Lắp đặt</option>
               </select>
               <span>Tiếp nhận</span><input disabled={disabled} type="datetime-local" value={(form.tg_tiep_nhan || "").slice(0, 16)} onChange={(e) => set({ tg_tiep_nhan: e.target.value })} />
               <span>Hoàn trả DK</span><input disabled={disabled} type="datetime-local" value={(form.tg_hoan_tra_dk || "").slice(0, 16)} onChange={(e) => set({ tg_hoan_tra_dk: e.target.value })} />
@@ -233,6 +293,30 @@ export default function WarrantyTickets() {
               <select disabled={disabled} value={form.xuat_hd ? 1 : 0} onChange={(e) => set({ xuat_hd: Number(e.target.value) })}>
                 <option value={0}>Không</option><option value={1}>Có</option>
               </select>
+              <span>NV tiếp nhận</span>
+              <BhSuggest
+                disabled={disabled}
+                value={form.nv_tiep_nhan || ""}
+                items={staffItems}
+                onChange={(nv_tiep_nhan) => setForm((c) => ({ ...c, nv_tiep_nhan }))}
+                onPick={(item) => setForm((c) => ({ ...c, nv_tiep_nhan: item.value }))}
+              />
+              <span>KTV</span>
+              <BhSuggest
+                disabled={disabled}
+                value={form.nv_ktv || ""}
+                items={staffItems}
+                onChange={(nv_ktv) => setForm((c) => ({ ...c, nv_ktv }))}
+                onPick={(item) => setForm((c) => ({ ...c, nv_ktv: item.value }))}
+              />
+              <span>Kế toán</span>
+              <BhSuggest
+                disabled={disabled}
+                value={form.nv_ketoan || ""}
+                items={staffItems}
+                onChange={(nv_ketoan) => setForm((c) => ({ ...c, nv_ketoan }))}
+                onPick={(item) => setForm((c) => ({ ...c, nv_ketoan: item.value }))}
+              />
             </div>
           </fieldset>
           <fieldset>

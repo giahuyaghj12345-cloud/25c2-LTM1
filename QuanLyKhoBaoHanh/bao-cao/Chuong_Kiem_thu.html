@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Chương kiểm thử — Quản lý xuất kho và bảo hành</title>
+<style>
+  body { font-family: "Times New Roman", Times, serif; font-size: 13pt; line-height: 1.5; max-width: 900px; margin: 24px auto; color: #111; }
+  h1, h2, h3 { font-family: "Times New Roman", Times, serif; }
+  h1 { text-align: center; font-size: 16pt; text-transform: uppercase; }
+  h2 { font-size: 14pt; margin-top: 28px; }
+  h3 { font-size: 13pt; margin-top: 18px; }
+  p { text-align: justify; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 12pt; }
+  th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
+  th { background: #eee; text-align: center; }
+  .fig { text-align: center; margin: 16px 0 22px; }
+  .fig img { max-width: 100%; border: 1px solid #ccc; }
+  .cap { font-style: italic; margin-top: 6px; }
+  .meta { text-align: center; margin-bottom: 28px; }
+  .note { font-size: 11pt; color: #333; }
+</style>
+</head>
+<body>
+
+<p class="meta">
+<b>TRƯỜNG CAO ĐẲNG … — KHOA CÔNG NGHỆ THÔNG TIN</b><br/>
+Ngành: Lập trình máy tính &nbsp;|&nbsp; Lớp: 25C2-LTM1 &nbsp;|&nbsp; Học kỳ 2026–2027<br/>
+Sinh viên: <b>Nguyễn Phi Gia Huy</b> (MSSV 25002474), <b>Lưu Phú Nguyễn</b><br/>
+Đề tài: <b>Hệ thống quản lý xuất kho và bảo hành sản phẩm</b> (ứng dụng Desktop WinForms + SQL Server)
+</p>
+
+<h1>Chương … — Kiểm thử hệ thống</h1>
+
+<h2>1. Mục tiêu kiểm thử</h2>
+<p>Kiểm thử nhằm xác nhận các chức năng đã cài đặt trên ứng dụng <i>QuanLyKhoBaoHanh</i> hoạt động đúng trên dữ liệu thật (database <b>Quanlysanpham</b>), đúng phân quyền và đúng luồng nghiệp vụ xuất kho — serial — bảo hành. Phạm vi là kiểm thử chức năng (black-box) theo từng màn hình, không bao gồm kiểm thử hiệu năng hay bảo mật chuyên sâu.</p>
+
+<h2>2. Môi trường kiểm thử</h2>
+<table>
+  <tr><th>Hạng mục</th><th>Cấu hình</th></tr>
+  <tr><td>Hệ điều hành</td><td>Windows 10</td></tr>
+  <tr><td>Ứng dụng</td><td>QuanLyKhoBaoHanh (.NET 9, Windows Forms)</td></tr>
+  <tr><td>CSDL</td><td>SQL Server Express (Quanlysanpham), localhost\SQLEXPRESS03</td></tr>
+  <tr><td>Tài khoản thử</td><td>Huy / vai trò Quản trị viên (được tạo serial)</td></tr>
+  <tr><td>Dữ liệu mẫu</td><td>Phiếu BH BH26090001, serial 11240826-DAD-TBN0001, SP000002, khách KIDLOFIFAI; báo giá BG26100001; kho KB26100001; thu TH26100001; hóa đơn HD26100001</td></tr>
+  <tr><td>Stored procedure</td><td>usp_BhSoCt, usp_BhPhieu, usp_BhBaoGia, usp_BhKho, usp_BhThu, usp_BhHoaDon, usp_BhTraCuu</td></tr>
+</table>
+
+<h2>3. Phạm vi chức năng đã kiểm thử</h2>
+<table>
+  <tr><th>STT</th><th>Nhóm</th><th>Chức năng</th><th>Kết quả</th></tr>
+  <tr><td>1</td><td>Hệ thống</td><td>Đăng nhập, đăng ký, hồ sơ, phân quyền</td><td>Đạt</td></tr>
+  <tr><td>2</td><td>Danh mục</td><td>Sản phẩm, khách hàng, tiền công</td><td>Đạt</td></tr>
+  <tr><td>3</td><td>Kho</td><td>Phiếu xuất kho, tồn kho</td><td>Đạt</td></tr>
+  <tr><td>4</td><td>Serial</td><td>Tạo số serial từ phiếu xuất, khóa 1 người dùng</td><td>Đạt</td></tr>
+  <tr><td>5</td><td>Bảo hành</td><td>Phiếu BH, trạng thái, phụ tùng / tiền công</td><td>Đạt</td></tr>
+  <tr><td>6</td><td>Bảo hành</td><td>Báo giá, kho MGD 7/8/10/11, thu PT, hóa đơn</td><td>Đạt</td></tr>
+  <tr><td>7</td><td>Bảo hành</td><td>Tra cứu lịch sử serial</td><td>Đạt</td></tr>
+</table>
+
+<h2>4. Kịch bản kiểm thử</h2>
+<table>
+  <tr><th>Mã</th><th>Mô tả bước</th><th>Dữ liệu vào</th><th>Kỳ vọng</th><th>Thực tế</th></tr>
+  <tr><td>TC01</td><td>Đăng nhập sai mật khẩu</td><td>User Huy, mật khẩu sai</td><td>Báo “Sai tài khoản hoặc mật khẩu”</td><td>Đạt</td></tr>
+  <tr><td>TC02</td><td>Đăng nhập đúng</td><td>User Huy, mật khẩu đúng</td><td>Vào tổng quan, hiện vai trò Quản trị viên</td><td>Đạt</td></tr>
+  <tr><td>TC03</td><td>Đăng ký tài khoản mới</td><td>Tên, email, mật khẩu ≥ 4 ký tự</td><td>Tạo dòng users, thông báo đăng nhập</td><td>Đạt</td></tr>
+  <tr><td>TC04</td><td>Danh mục sản phẩm</td><td>Xem / thêm / sửa SP000002</td><td>Lưới hiện mã, tên, ĐVT</td><td>Đạt</td></tr>
+  <tr><td>TC05</td><td>Danh mục khách hàng</td><td>Khách KIDLOFIFAI</td><td>Hiện mã và tên khách</td><td>Đạt</td></tr>
+  <tr><td>TC06</td><td>Lập phiếu xuất kho</td><td>Mã GD 1 hoặc 2 (PT BH)</td><td>Lưu stock_outs + dòng vật tư</td><td>Đạt</td></tr>
+  <tr><td>TC07</td><td>Tạo serial</td><td>Chọn phiếu xuất đã khóa quyền</td><td>Sinh so_serial, ghi hạn BH</td><td>Đạt</td></tr>
+  <tr><td>TC08</td><td>Lập phiếu bảo hành</td><td>Serial + khách + PT/công</td><td>Gọi usp_BhPhieu action 10, có số BH…</td><td>Đạt</td></tr>
+  <tr><td>TC09</td><td>Đổi trạng thái phiếu BH</td><td>Xác nhận / đang sửa / hoàn tất / giao</td><td>usp_BhPhieu action 20 cập nhật status</td><td>Đạt</td></tr>
+  <tr><td>TC10</td><td>Lập báo giá từ phiếu</td><td>Chọn BH26090001</td><td>Sinh BG…, tổng 350.000, copy dòng CT</td><td>Đạt</td></tr>
+  <tr><td>TC11</td><td>Xuất kho PT BH (MGD 7)</td><td>Chọn phiếu, dòng SP000002</td><td>Sinh KB…, phiếu chuyển đang sửa</td><td>Đạt</td></tr>
+  <tr><td>TC12</td><td>Thu phụ tùng</td><td>350.000, tiền mặt</td><td>Sinh TH…</td><td>Đạt</td></tr>
+  <tr><td>TC13</td><td>Lập hóa đơn BH</td><td>Từ phiếu BH</td><td>Sinh HD…, tổng = PT + công</td><td>Đạt</td></tr>
+  <tr><td>TC14</td><td>Tra cứu serial</td><td>11240826-DAD-TBN0001</td><td>Hiện serial, phiếu BH, BG, kho, thu, HĐ</td><td>Đạt</td></tr>
+  <tr><td>TC15</td><td>Phân quyền</td><td>Admin xem users</td><td>Đổi role / quyền tạo serial</td><td>Đạt</td></tr>
+  <tr><td>TC16</td><td>Import Excel danh mục (kiểu AA_ImportExcel STHINK)</td><td>File mẫu tiền công / SP / KH — Duyệt → Sheet → preview → Import</td><td>Upsert theo mã; báo Thêm / Cập nhật / Bỏ qua; Kết xuất lưới ra xlsx</td><td>Đạt</td></tr>
+</table>
+
+<h2>5. Minh họa giao diện khi kiểm thử</h2>
+<p>Các hình dưới đây chụp trực tiếp từ bản chạy trên máy phát triển (tài khoản Huy). Có thể chèn vào báo cáo Word: chuột phải ảnh → Sao chép, hoặc chèn từ thư mục <code>bao-cao/anh</code>.</p>
+
+<div class="fig">
+  <img src="anh/01_dang_nhap.png" alt="Đăng nhập"/>
+  <div class="cap">Hình 5.1. Màn hình đăng nhập hệ thống</div>
+</div>
+<div class="fig">
+  <img src="anh/02_dang_ky.png" alt="Đăng ký"/>
+  <div class="cap">Hình 5.2. Đăng ký tài khoản mới</div>
+</div>
+<div class="fig">
+  <img src="anh/03_tong_quan.png" alt="Tổng quan"/>
+  <div class="cap">Hình 5.3. Tổng quan — nhóm Danh mục, Kho, Serial, Bảo hành</div>
+</div>
+<div class="fig">
+  <img src="anh/04_dm_san_pham.png" alt="DM sản phẩm"/>
+  <div class="cap">Hình 5.4. Danh mục sản phẩm (dmsp)</div>
+</div>
+<div class="fig">
+  <img src="anh/05_dm_khach.png" alt="DM khách"/>
+  <div class="cap">Hình 5.5. Danh mục khách hàng (dmkh)</div>
+</div>
+<div class="fig">
+  <img src="anh/06_dm_tien_cong.png" alt="DM tiền công"/>
+  <div class="cap">Hình 5.5b. Danh mục tiền công (labor_costs)</div>
+</div>
+<div class="fig">
+  <img src="anh/07_phieu_xuat_kho.png" alt="Phiếu xuất"/>
+  <div class="cap">Hình 5.6. Lập phiếu xuất kho (mã giao dịch xuất bán / PT bảo hành)</div>
+</div>
+<div class="fig">
+  <img src="anh/08_ton_kho.png" alt="Tồn kho"/>
+  <div class="cap">Hình 5.7. Tra cứu tồn kho sản phẩm</div>
+</div>
+<div class="fig">
+  <img src="anh/09_tao_serial.png" alt="Serial"/>
+  <div class="cap">Hình 5.8. Tạo số serial từ phiếu xuất (có khóa 1 người dùng)</div>
+</div>
+<div class="fig">
+  <img src="anh/10_phieu_bh.png" alt="Danh sách phiếu BH"/>
+  <div class="cap">Hình 5.8b. Danh sách phiếu bảo hành (BH26090001 — đang sửa)</div>
+</div>
+<div class="fig">
+  <img src="anh/11_phieu_bh_chi_tiet.png" alt="Phiếu BH chi tiết"/>
+  <div class="cap">Hình 5.9. Phiếu bảo hành — khách, serial, xe, yêu cầu, phụ tùng / tiền công</div>
+</div>
+<div class="fig">
+  <img src="anh/19_chon_phieu_bh.png" alt="Chọn phiếu"/>
+  <div class="cap">Hình 5.10. Chọn phiếu bảo hành nguồn cho báo giá / kho / thu / hóa đơn</div>
+</div>
+<div class="fig">
+  <img src="anh/12_bao_gia.png" alt="Báo giá"/>
+  <div class="cap">Hình 5.11. Báo giá bảo hành (BG26100001 lập từ BH26090001, tổng 350.000)</div>
+</div>
+<div class="fig">
+  <img src="anh/13_kho_bh.png" alt="Danh sách kho BH"/>
+  <div class="cap">Hình 5.11b. Danh sách phiếu kho bảo hành (KB26100001 — xuất PT BH)</div>
+</div>
+<div class="fig">
+  <img src="anh/20_kho_xuat_pt.png" alt="Kho BH"/>
+  <div class="cap">Hình 5.12. Kho bảo hành — xuất phụ tùng MGD 7</div>
+</div>
+<div class="fig">
+  <img src="anh/14_thu_pt.png" alt="Thu PT"/>
+  <div class="cap">Hình 5.13. Thu phụ tùng bảo hành</div>
+</div>
+<div class="fig">
+  <img src="anh/15_hoa_don.png" alt="Hóa đơn"/>
+  <div class="cap">Hình 5.14. Hóa đơn bảo hành</div>
+</div>
+<div class="fig">
+  <img src="anh/16_tra_cuu.png" alt="Tra cứu"/>
+  <div class="cap">Hình 5.15. Tra cứu lịch sử serial trên toàn vòng đời BH</div>
+</div>
+<div class="fig">
+  <img src="anh/17_phan_quyen.png" alt="Phân quyền"/>
+  <div class="cap">Hình 5.16. Phân quyền người dùng (admin)</div>
+</div>
+<div class="fig">
+  <img src="anh/18_ho_so.png" alt="Hồ sơ"/>
+  <div class="cap">Hình 5.17. Hồ sơ tài khoản đang đăng nhập</div>
+</div>
+
+<h2>6. Kiểm thử stored procedure</h2>
+<p>Toàn bộ ghi nhận bảo hành đi qua SP (ứng dụng không INSERT trực tiếp). Đã thực thi trên Quanlysanpham:</p>
+<table>
+  <tr><th>SP</th><th>Action đã test</th><th>Kết quả</th></tr>
+  <tr><td>usp_BhSoCt</td><td>Sinh BH/BG/KB/TH/HD theo tháng</td><td>Đạt (BG26100001, KB26100001, …)</td></tr>
+  <tr><td>usp_BhPhieu</td><td>1 list, 2 get, 3 CT, 10 save XML, 20 status</td><td>Đạt</td></tr>
+  <tr><td>usp_BhBaoGia</td><td>10 lập từ phiếu, 1 list</td><td>Đạt, copy 2 dòng PT+công, tổng 350.000</td></tr>
+  <tr><td>usp_BhKho</td><td>10 MGD 7 xuất PT</td><td>Đạt, phiếu BH chuyển đang sửa</td></tr>
+  <tr><td>usp_BhThu / usp_BhHoaDon</td><td>10 lập chứng từ</td><td>Đạt</td></tr>
+  <tr><td>usp_BhTraCuu</td><td>1 lịch sử, 2/3/4 lookup</td><td>Đạt (action 3 dùng SQL động, không phụ thuộc tên cột dmsp cứng)</td></tr>
+</table>
+
+<h2>7. Lỗi phát hiện và xử lý khi test</h2>
+<table>
+  <tr><th>Lỗi</th><th>Nguyên nhân</th><th>Cách xử lý</th></tr>
+  <tr><td>CREATE usp_BhTraCuu: Invalid column name ma_sp</td><td>SSMS chạy script trên sai database, compile bắt cột dmsp</td><td>Thêm USE [Quanlysanpham]; action 3 đọc cột động (ma_sp/code)</td></tr>
+  <tr><td>Lưới phiếu trống</td><td>Chưa có dữ liệu BH</td><td>Lập phiếu + seed kịch bản test (sql/seed_baocao.sql)</td></tr>
+</table>
+
+<h2>8. Kết luận kiểm thử</h2>
+<p>15 kịch bản chức năng chính đều <b>đạt</b> trên môi trường Windows + SQL Server Express. Luồng nghiệp vụ khép kín: xuất kho → tạo serial → tiếp nhận BH → báo giá → xuất PT kho BH → thu tiền → hóa đơn → tra cứu serial. Ứng dụng phù hợp mục tiêu đồ án (phần mềm desktop quản lý kho và vòng đời bảo hành), có thể demo bảo vệ bằng tài khoản Huy trên database Quanlysanpham.</p>
+<p class="note">Gợi ý khi nộp Word: mở file HTML này bằng Microsoft Word (File → Mở), hoặc kéo từng ảnh trong thư mục <b>anh</b> vào chương Kiểm thử. Có thể chụp lại cho sắc nét hơn bằng Win+Shift+S khi đang chạy app (F5).</p>
+
+</body>
+</html>

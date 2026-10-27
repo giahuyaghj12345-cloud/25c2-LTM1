@@ -41,6 +41,37 @@ export function canUseSerial(user?: Pick<User, "role" | "canCreateSerial"> | nul
   return Boolean(user && (user.canCreateSerial || user.role === "admin"));
 }
 
+/** Menu / route access by role (admin luôn full). */
+export function canAccessCatalog(user?: Pick<User, "role"> | null) {
+  const role = user?.role;
+  return role === "admin" || role === "warehouse" || role === "warranty" || role === "sales" || role === "user";
+}
+
+export function canAccessWarehouse(user?: Pick<User, "role"> | null) {
+  const role = user?.role;
+  return role === "admin" || role === "warehouse" || role === "sales";
+}
+
+export function canAccessWarranty(user?: Pick<User, "role"> | null) {
+  const role = user?.role;
+  return role === "admin" || role === "warranty" || role === "sales" || role === "user";
+}
+
+export function canWriteCatalog(user?: Pick<User, "role"> | null) {
+  const role = user?.role;
+  return role === "admin" || role === "warehouse" || role === "sales";
+}
+
+export function canWriteWarehouse(user?: Pick<User, "role"> | null) {
+  const role = user?.role;
+  return role === "admin" || role === "warehouse" || role === "sales";
+}
+
+export function canWriteWarranty(user?: Pick<User, "role"> | null) {
+  const role = user?.role;
+  return role === "admin" || role === "warranty" || role === "sales";
+}
+
 const API = "/api/auth";
 
 function getToken() {
@@ -143,6 +174,7 @@ export type Product = {
   groupCode3?: string;
   minQty: number;
   maxQty: number;
+  stockQty?: number;
   industryCode?: string;
   vatRate: number;
   envTax: number;
@@ -262,6 +294,28 @@ export type SerialItem = {
 
 const CAT = "/api/catalog";
 
+export type ImportMode = "products" | "labors" | "customers";
+
+export type ImportSheet = {
+  name: string;
+  rowCount: number;
+  headers: string[];
+  rows: Record<string, string>[];
+  allRows: Record<string, string>[];
+};
+
+export type ImportParseResult = {
+  fileName: string;
+  sheets: ImportSheet[];
+};
+
+export type ImportCommitResult = {
+  message: string;
+  inserted: number;
+  updated: number;
+  skipped: number;
+};
+
 export const catalogApi = {
   products: () => request<Product[]>(`${CAT}/products`),
   saveProduct: (item: Partial<Product>) =>
@@ -284,6 +338,34 @@ export const catalogApi = {
       body: JSON.stringify(item),
     }),
   deleteCustomer: (id: string) => request<{ message: string }>(`${CAT}/customers/${id}`, { method: "DELETE" }),
+  parseImport: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<ImportParseResult>(`${CAT}/import/parse`, { method: "POST", body: form });
+  },
+  commitImport: (mode: ImportMode, rows: Record<string, string>[]) =>
+    request<ImportCommitResult>(`${CAT}/import/${mode}`, {
+      method: "POST",
+      body: JSON.stringify({ rows }),
+    }),
+  downloadImportTemplate: async (mode: ImportMode) => {
+    const token = getToken();
+    const res = await fetch(`${CAT}/import/template/${mode}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(data.message || "Không tải được mẫu");
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download =
+      mode === "products" ? "mau_import_dmsp.xlsx" : mode === "labors" ? "mau_import_tiencong.xlsx" : "mau_import_dmkh.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
   inventory: () => request<(Product & { quantity: number })[]>(`${CAT}/inventory`),
   stockOuts: () => request<StockOut[]>(`${CAT}/stock-outs`),
   stockOut: (id: string) => request<StockOut>(`${CAT}/stock-outs/${id}`),
@@ -396,8 +478,14 @@ export type BhTicket = BhQuote & {
   hd_dt?: string;
   hd_email?: string;
   hoan_tat?: number;
+  da_xuat?: number;
   da_nhap?: number;
   da_giao?: number;
+  da_thu?: number;
+  da_hd?: number;
+  nv_tiep_nhan?: string;
+  nv_ktv?: string;
+  nv_ketoan?: string;
   createdBy?: string;
   bg_id?: string;
   so_bg?: string;
@@ -499,7 +587,26 @@ export const warrantyApi = {
   suggest: () => request<{
     customers: { ma_kh: string; ten_kh?: string; dia_chi?: string; dien_thoai?: string; email?: string; mst?: string; cccd?: string; nhom?: string }[];
     serials: { so_serial: string; ma_kh?: string; ten_kh?: string; ma_sp?: string; ten_sp?: string; so_batch?: string }[];
+    staff: { username: string; role: string }[];
   }>(`${BH}/suggest`),
+  serialReport: (params: {
+    q?: string;
+    ma_kh?: string;
+    ma_sp?: string;
+    tinh_trang?: string;
+    from?: string;
+    to?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) qs.set(key, value);
+    });
+    return request<{
+      rows: Record<string, string | number | null>[];
+      summary: { tinh_trang: string; so_luong: number }[];
+      total: number;
+    }>(`${BH}/serial-report?${qs.toString()}`);
+  },
   kmList: () => request<BhKm[]>(`${BH}/km`),
   km: (id: string) => request<BhKm>(`${BH}/km/${id}`),
   saveKm: (item: Partial<BhKm>) =>

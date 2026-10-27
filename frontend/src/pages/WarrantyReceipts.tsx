@@ -64,7 +64,19 @@ export default function WarrantyReceipts() {
     e.preventDefault();
     setError("");
     try {
-      const doc = await warrantyApi.saveReceipt({ phieuId, so_tien: lines.reduce((sum, line) => sum + Number(line.so_tien || 0), 0) || soTien, hinh_thuc: hinhThuc, nguoi_nop: nguoiNop, ly_do: lyDo, ma_kh: maKh, ten_kh: tenKh, dia_chi: diaChi, lines });
+      const doc = await warrantyApi.saveReceipt({
+        id: current?.id,
+        so_ct: current?.so_ct,
+        phieuId,
+        so_tien: lines.reduce((sum, line) => sum + Number(line.so_tien || 0), 0) || soTien,
+        hinh_thuc: hinhThuc,
+        nguoi_nop: nguoiNop,
+        ly_do: lyDo,
+        ma_kh: maKh,
+        ten_kh: tenKh,
+        dia_chi: diaChi,
+        lines,
+      });
       setCurrent(doc);
       setRows(await warrantyApi.receipts());
     } catch (err) {
@@ -81,7 +93,8 @@ export default function WarrantyReceipts() {
           <p className="desk-note">Loại phiếu thu 2 — Thu ngân · Quyển PTBH · TGGD VND</p>
         </div>
         <div className="desk-cmds">
-          <button type="submit" form="pt-form">Lưu</button>
+          <button type="submit" form="pt-form">{current?.id ? "Cập nhật" : "Lưu"}</button>
+          <button type="button" className="ghost" disabled={!current} onClick={() => { setCurrent(null); setPhieuId(""); setSoTien(0); setLines([]); }}>Mới</button>
           <button type="button" disabled={!current} onClick={() => current && printVoucher(`Phiếu thu ${current.so_ct}`, `<p>${current.ten_kh || ""} nộp ${money(current.so_tien)} (${current.hinh_thuc})</p><p>${current.ly_do || ""}</p>`)}>In</button>
         </div>
       </div>

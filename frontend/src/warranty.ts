@@ -7,6 +7,7 @@ export const FLOW = [
   { to: "/warranty/receipts", label: "4. Thu tiền" },
   { to: "/warranty/invoices", label: "5. Hóa đơn" },
   { to: "/warranty/lookup", label: "6. Tra cứu" },
+  { to: "/warranty/serial-report", label: "7. BC Serial" },
 ];
 
 export const QUOTE_STATUS: Record<string, string> = {
@@ -28,7 +29,21 @@ export const LOAI_BH: Record<number, string> = {
   1: "1 - Sửa chữa",
   2: "2 - Sale 1 đổi 1",
   3: "3 - DV 1 đổi 1",
+  4: "4 - Bảo dưỡng",
+  5: "5 - Bảo hành",
+  6: "6 - Lắp đặt",
 };
+
+/** Nhóm sửa chữa (GGV): MGD 10 nhập/xuất giao. Loại 2–3 dùng MGD 8/11. */
+export function isRepairLoai(loai?: number) {
+  const n = Number(loai) || 1;
+  return n === 1 || n === 4 || n === 5 || n === 6;
+}
+
+export function isSwapLoai(loai?: number) {
+  const n = Number(loai) || 1;
+  return n === 2 || n === 3;
+}
 
 export const MA_GD: Record<number, string> = {
   7: "7 - Xuất kho phụ tùng BH",

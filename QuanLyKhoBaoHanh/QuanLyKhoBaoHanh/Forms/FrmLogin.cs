@@ -13,21 +13,21 @@ public class FrmLogin : Form
 
     public FrmLogin()
     {
-        Text = "Đăng nhập - Quản lý xuất kho & bảo hành";
+        Text = "Đăng nhập — Kho & Bảo hành";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
-        ClientSize = new Size(460, 450);
+        ClientSize = new Size(440, 480);
         Font = Ui.Body;
         BackColor = Ui.Bg;
 
         var theme = Ui.Ghost(Ui.Dark ? "Sáng" : "Tối");
-        theme.Location = new Point(352, 6);
+        theme.Location = new Point(332, 10);
 
         var card = new Panel
         {
-            Size = new Size(400, 380),
-            Location = new Point(30, 42),
+            Size = new Size(380, 400),
+            Location = new Point(30, 48),
             BackColor = Ui.Panel,
             Padding = new Padding(28, 24, 28, 24),
             Tag = "card",
@@ -39,54 +39,57 @@ public class FrmLogin : Form
         };
         card.Paint += (_, e) =>
         {
+            var g = e.Graphics;
+            using (var accent = new SolidBrush(Ui.Brand))
+                g.FillRectangle(accent, 0, 0, 4, card.Height);
             using var pen = new Pen(Ui.Line);
-            e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+            g.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
         };
 
-        var y = 16;
+        var y = 20;
         card.Controls.Add(new Label
         {
-            Text = "HỆ THỐNG QUẢN LÝ",
-            ForeColor = Ui.BrandDark,
+            Text = "KHO & BẢO HÀNH",
+            ForeColor = Ui.Brand,
             Font = Ui.Small,
             AutoSize = true,
-            Location = new Point(24, y),
+            Location = new Point(28, y),
         });
-        y += 22;
+        y += 24;
         card.Controls.Add(new Label
         {
             Text = "Đăng nhập",
             Font = Ui.Title,
             AutoSize = true,
-            Location = new Point(24, y),
-        });
-        y += 40;
-        card.Controls.Add(new Label
-        {
-            Text = "Xuất kho, serial và vòng đời bảo hành sản phẩm",
-            ForeColor = Ui.Muted,
-            AutoSize = true,
-            Location = new Point(24, y),
+            Location = new Point(28, y),
         });
         y += 36;
-        card.Controls.Add(new Label { Text = "Email hoặc tên đăng nhập", ForeColor = Ui.Muted, AutoSize = true, Location = new Point(24, y) });
+        card.Controls.Add(new Label
+        {
+            Text = "Xuất kho · Serial · Tiếp nhận bảo hành",
+            ForeColor = Ui.Muted,
+            AutoSize = true,
+            Location = new Point(28, y),
+        });
+        y += 40;
+        card.Controls.Add(new Label { Text = "Email hoặc tên đăng nhập", ForeColor = Ui.Muted, AutoSize = true, Location = new Point(28, y) });
         y += 22;
-        txtUser.Bounds = new Rectangle(24, y, 340, 32);
-        y += 48;
-        card.Controls.Add(new Label { Text = "Mật khẩu", ForeColor = Ui.Muted, AutoSize = true, Location = new Point(24, y) });
+        txtUser.Bounds = new Rectangle(28, y, 316, 34);
+        y += 50;
+        card.Controls.Add(new Label { Text = "Mật khẩu", ForeColor = Ui.Muted, AutoSize = true, Location = new Point(28, y) });
         y += 22;
-        txtPass.Bounds = new Rectangle(24, y, 340, 32);
+        txtPass.Bounds = new Rectangle(28, y, 316, 34);
         txtPass.UseSystemPasswordChar = true;
-        y += 48;
+        y += 52;
         btnLogin = Ui.Primary("Đăng nhập");
-        btnLogin.Bounds = new Rectangle(24, y, 340, 38);
+        btnLogin.Bounds = new Rectangle(28, y, 316, 40);
         btnLogin.Click += (_, _) => DoLogin();
-        y += 48;
+        y += 52;
         var register = new LinkLabel
         {
             Text = "Chưa có tài khoản? Đăng ký",
             AutoSize = true,
-            Location = new Point(24, y),
+            Location = new Point(28, y),
             LinkColor = Ui.BrandDark,
         };
         register.Click += (_, _) =>
@@ -96,7 +99,7 @@ public class FrmLogin : Form
         };
         lblError.ForeColor = Ui.Danger;
         lblError.AutoSize = false;
-        lblError.Bounds = new Rectangle(24, 348, 340, 22);
+        lblError.Bounds = new Rectangle(28, 360, 316, 22);
         card.Controls.AddRange([txtUser, txtPass, btnLogin, register, lblError]);
         Controls.Add(card);
         Controls.Add(theme);

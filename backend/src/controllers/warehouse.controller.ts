@@ -38,6 +38,7 @@ const PRODUCT_FIELDS = [
   "groupCode3",
   "minQty",
   "maxQty",
+  "stockQty",
   "industryCode",
   "note",
   "status",
@@ -72,6 +73,7 @@ function pickProduct(body: Record<string, unknown>) {
   data.trackLot = asBool(data.trackLot);
   data.minQty = Number(data.minQty) || 0;
   data.maxQty = Number(data.maxQty) || 0;
+  if (data.stockQty !== undefined) data.stockQty = Number(data.stockQty) || 0;
   data.vatRate = Number(data.vatRate) || 0;
   data.taxRate = Number(data.taxRate) || 0;
   data.envTax = Number(data.envTax) || 0;
@@ -169,6 +171,7 @@ async function ensureProductSchema() {
       loai_vt NVARCHAR(2) NULL,
       sl_min DECIMAL(15,4) NOT NULL DEFAULT 0,
       sl_max DECIMAL(15,4) NOT NULL DEFAULT 0,
+      sl_ton DECIMAL(18,4) NOT NULL DEFAULT 0,
       vt_ton_kho BIT NOT NULL DEFAULT 1,
       thue_gtgt DECIMAL(10,2) NOT NULL DEFAULT 0,
       hang_sx NVARCHAR(255) NULL,
@@ -193,6 +196,7 @@ async function ensureProductSchema() {
   await runSchemaStep(`IF COL_LENGTH('dbo.dmsp', 'lot_yn') IS NULL ALTER TABLE dbo.dmsp ADD lot_yn BIT NOT NULL CONSTRAINT DF_dmsp_lot DEFAULT 0`);
   await runSchemaStep(`IF COL_LENGTH('dbo.dmsp', 'gia_ton') IS NULL ALTER TABLE dbo.dmsp ADD gia_ton INT NOT NULL CONSTRAINT DF_dmsp_gia_ton DEFAULT 1`);
   await runSchemaStep(`IF COL_LENGTH('dbo.dmsp', 'sua_tk_vt') IS NULL ALTER TABLE dbo.dmsp ADD sua_tk_vt INT NOT NULL CONSTRAINT DF_dmsp_sua_tk DEFAULT 0`);
+  await runSchemaStep(`IF COL_LENGTH('dbo.dmsp', 'sl_ton') IS NULL ALTER TABLE dbo.dmsp ADD sl_ton DECIMAL(18,4) NOT NULL CONSTRAINT DF_dmsp_sl_ton DEFAULT 0`);
   await runSchemaStep(`
     IF OBJECT_ID('dbo.dmsp_gia', 'U') IS NULL
     CREATE TABLE dbo.dmsp_gia (
@@ -249,6 +253,9 @@ export const productHandlers = {
       await ensureProductSchema();
       const repo = AppDataSource.getRepository(Product);
       const data = pickProduct(req.body);
+      if (req.body.quantity !== undefined) {
+        data.stockQty = Number(req.body.quantity) || 0;
+      }
       const name = String(data.name || "").trim();
       if (!name) return res.status(400).json({ message: "Nhập tên sản phẩm" });
       const { code, searchCode } = await nextProductCodes();
@@ -268,6 +275,9 @@ export const productHandlers = {
       const item = await repo.findOneBy({ id: String(req.params.id) });
       if (!item) return res.status(404).json({ message: "Không tìm thấy" });
       const data = pickProduct(req.body);
+      if (req.body.quantity !== undefined) {
+        data.stockQty = Number(req.body.quantity) || 0;
+      }
       delete data.code;
       delete data.searchCode;
       repo.merge(item, data);
@@ -314,6 +324,32 @@ async function nextStockOutNumber() {
   return `PX${stamp}-${String(count + 1).padStart(3, "0")}`;
 }
 
+async function adjustStock(productId: string, delta: number) {
+  if (!productId || !delta) return;
+  if (delta < 0) {
+    const rows = await AppDataSource.query(
+      `SELECT ISNULL(sl_ton, 0) AS qty, ma_sp, ten_sp FROM dbo.dmsp
+       WHERE id = @0 AND ISNULL(CONVERT(int, vt_ton_kho), 1) = 1`,
+      [productId]
+    );
+    const available = Number(rows[0]?.qty) || 0;
+    if (available + delta < -0.0001) {
+      const code = rows[0]?.ma_sp || productId;
+      throw new Error(`Không đủ tồn kho cho ${code} (còn ${available}, cần ${Math.abs(delta)}).`);
+    }
+  }
+  await AppDataSource.query(
+    `UPDATE dbo.dmsp
+     SET sl_ton = ISNULL(sl_ton, 0) + @0, updatedAt = GETDATE()
+     WHERE id = @1 AND ISNULL(CONVERT(int, vt_ton_kho), 1) = 1`,
+    [delta, productId]
+  );
+}
+
+function isPostedStatus(status?: string) {
+  return status === "posted" || status === "locked";
+}
+
 export const listInventory = async (_req: AuthRequest, res: Response) => {
   try {
     if (!AppDataSource.isInitialized) {
@@ -327,7 +363,7 @@ export const listInventory = async (_req: AuthRequest, res: Response) => {
     res.json(
       items.map((item) => ({
         ...item,
-        quantity: 0,
+        quantity: Number(item.stockQty) || 0,
       }))
     );
   } catch (error) {
@@ -361,6 +397,7 @@ export const getStockOut = async (req: AuthRequest, res: Response) => {
 export const saveStockOut = async (req: AuthRequest, res: Response) => {
   try {
     await ensureSerialSchema();
+    await ensureProductSchema();
     const repo = AppDataSource.getRepository(StockOut);
     const lineRepo = AppDataSource.getRepository(StockOutLine);
     const productRepo = AppDataSource.getRepository(Product);
@@ -370,6 +407,11 @@ export const saveStockOut = async (req: AuthRequest, res: Response) => {
     if (voucher.serialLocked || voucher.serialCreated) {
       return res.status(400).json({ message: "Phiếu đã tạo Serial hoặc đã khóa, không được sửa / xóa" });
     }
+
+    const prevPosted = isPostedStatus(voucher.status);
+    const prevLines = id
+      ? await lineRepo.find({ where: { stockOut: { id: voucher.id } }, relations: { product: true } })
+      : [];
 
     voucher.date = req.body.date || voucher.date || new Date().toISOString().slice(0, 10);
     voucher.receiver = req.body.receiver || "";
@@ -395,16 +437,22 @@ export const saveStockOut = async (req: AuthRequest, res: Response) => {
     voucher.createdBy = req.user?.id;
     voucher = await repo.save(voucher);
 
+    let nextLines: { productId?: string; quantity: number }[] = prevLines.map((line) => ({
+      productId: line.product?.id,
+      quantity: Number(line.quantity) || 0,
+    }));
+
     if (Array.isArray(req.body.lines)) {
-      const oldLines = await lineRepo.find({ where: { stockOut: { id: voucher.id } } });
-      if (oldLines.length) await lineRepo.remove(oldLines);
+      if (prevLines.length) await lineRepo.remove(prevLines);
+      nextLines = [];
       for (const line of req.body.lines) {
         const product = line.materialId ? await productRepo.findOneBy({ id: line.materialId }) : null;
+        const qty = Number(line.quantity) || 0;
         const row = lineRepo.create({
           stockOut: voucher,
           product: product || undefined,
           materialName: product?.name || line.materialName || "",
-          quantity: Number(line.quantity) || 0,
+          quantity: qty,
           unit: line.unit || product?.unit || "",
           warehouseCode: line.warehouseCode || "",
           lotCode: line.lotCode || "",
@@ -414,6 +462,18 @@ export const saveStockOut = async (req: AuthRequest, res: Response) => {
           note: line.note || "",
         });
         await lineRepo.save(row);
+        nextLines.push({ productId: product?.id, quantity: qty });
+      }
+    }
+
+    if (prevPosted) {
+      for (const line of prevLines) {
+        if (line.product?.id) await adjustStock(line.product.id, Number(line.quantity) || 0);
+      }
+    }
+    if (isPostedStatus(voucher.status)) {
+      for (const line of nextLines) {
+        if (line.productId) await adjustStock(line.productId, -(Number(line.quantity) || 0));
       }
     }
 
@@ -422,18 +482,31 @@ export const saveStockOut = async (req: AuthRequest, res: Response) => {
     res.json(saved);
   } catch (error) {
     console.error(error);
+    const message = (error as Error).message || "";
+    if (/Không đủ tồn kho/i.test(message)) {
+      return res.status(400).json({ message });
+    }
     res.status(500).json({ message: "Không lưu được phiếu xuất kho" });
   }
 };
 
 export const deleteStockOut = async (req: AuthRequest, res: Response) => {
   try {
+    await ensureProductSchema();
     const repo = AppDataSource.getRepository(StockOut);
+    const lineRepo = AppDataSource.getRepository(StockOutLine);
     const item = await repo.findOneBy({ id: String(req.params.id) });
     if (!item) return res.status(404).json({ message: "Không tìm thấy phiếu" });
     if (item.serialLocked || item.serialCreated) {
       return res.status(400).json({ message: "Phiếu đã tạo Serial hoặc đã khóa, không được sửa / xóa" });
     }
+    const lines = await lineRepo.find({ where: { stockOut: { id: item.id } }, relations: { product: true } });
+    if (isPostedStatus(item.status)) {
+      for (const line of lines) {
+        if (line.product?.id) await adjustStock(line.product.id, Number(line.quantity) || 0);
+      }
+    }
+    if (lines.length) await lineRepo.remove(lines);
     await repo.remove(item);
     await addNotification("stock-out", `Xóa phiếu xuất kho ${item.number}`, req.user?.id);
     res.json({ message: "Đã xóa phiếu" });

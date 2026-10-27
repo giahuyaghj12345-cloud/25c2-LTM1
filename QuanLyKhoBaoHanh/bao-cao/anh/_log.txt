@@ -1,0 +1,21 @@
+start 10/5/2026 2:35:01 PM
+01_dang_nhap.png ok
+02_dang_ky.png ok
+03_tong_quan.png ok
+04_dm_san_pham.png ok
+05_dm_khach.png ok
+06_dm_tien_cong.png ok
+07_phieu_xuat_kho.png ok
+08_ton_kho.png ok
+09_tao_serial.png ok
+10_phieu_bh.png ok
+11_phieu_bh_chi_tiet.png ok
+12_bao_gia.png ok
+13_kho_bh.png ok
+14_thu_pt.png ok
+15_hoa_don.png ok
+16_tra_cuu.png ok
+17_phan_quyen.png ok
+18_ho_so.png ok
+19_chon_phieu_bh.png ok
+20_kho_xuat_pt.png ok

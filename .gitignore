@@ -16,3 +16,8 @@ QuanLyKhoBaoHanh/**/App.config
 *.log
 .DS_Store
 Thumbs.db
+
+# Database backup/dump (mang USB, khong up GitHub)
+SQL/Quanlysanpham
+*.bak
+

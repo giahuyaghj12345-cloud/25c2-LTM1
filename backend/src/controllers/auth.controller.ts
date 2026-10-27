@@ -40,6 +40,12 @@ export const register = async (req: Request, res: Response) => {
   }
 
   try {
+    if (!AppDataSource.isInitialized) {
+      return res.status(503).json({ message: "Đang kết nối SQL Server, thử lại sau vài giây." });
+    }
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({ message: "Thiếu JWT_SECRET trên máy chủ." });
+    }
     const userRepository = AppDataSource.getRepository(User);
     const existing = await userRepository.findOne({
       where: [{ email }, { username }],
@@ -80,7 +86,13 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    if (AppDataSource.isInitialized) await ensureSerialSchema();
+    if (!AppDataSource.isInitialized) {
+      return res.status(503).json({ message: "Đang kết nối SQL Server, thử lại sau vài giây." });
+    }
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({ message: "Thiếu JWT_SECRET trên máy chủ." });
+    }
+    await ensureSerialSchema();
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({
       where: [{ email }, { username: email }],
@@ -110,7 +122,10 @@ export const login = async (req: Request, res: Response) => {
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
-    if (AppDataSource.isInitialized) await ensureSerialSchema();
+    if (!AppDataSource.isInitialized) {
+      return res.status(503).json({ message: "Đang kết nối SQL Server, thử lại sau vài giây." });
+    }
+    await ensureSerialSchema();
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOneBy({ id: req.user?.id });
 

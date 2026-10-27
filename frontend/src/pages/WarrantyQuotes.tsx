@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { catalogApi, warrantyApi, type BhLine, type BhQuote, type LaborCost, type Product } from "../api";
 import BhFlow from "../components/BhFlow";
 import BhLines from "../components/BhLines";
@@ -18,6 +18,7 @@ const blank = (): Partial<BhQuote> & { lines: BhLine[] } => ({
 });
 
 export default function WarrantyQuotes() {
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [rows, setRows] = useState<BhQuote[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -101,6 +102,7 @@ export default function WarrantyQuotes() {
           <button type="button" disabled={!form.id || locked} onClick={() => setEditing(true)}>Sửa</button>
           <button type="submit" form="bg-form" disabled={disabled}>Lưu</button>
           <button type="button" disabled={!form.id || locked} onClick={() => void warrantyApi.postQuote(form.id!).then(async (doc) => { setForm({ ...doc, ngay_ct: day(doc.ngay_ct), lines: doc.lines || [] }); await refresh(); }).catch((err) => setError(err.message))}>Ghi sổ</button>
+          <button type="button" disabled={!form.id || form.status !== "da_duyet"} onClick={() => navigate(`/warranty/tickets?bg=${encodeURIComponent(form.id!)}`)}>Lập phiếu BH</button>
           <button type="button" disabled={!form.id} onClick={printDoc}>In</button>
         </div>
       </div>

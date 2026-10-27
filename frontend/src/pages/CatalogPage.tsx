@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
+import ImportExcelDialog from "../components/ImportExcelDialog";
+import type { ImportMode } from "../api";
 
 type Field = {
   key: string;
@@ -17,13 +19,16 @@ type Props<T extends { id: string }> = {
   fields: Field[];
   empty: Partial<T>;
   columns: { key: keyof T | string; label: string; format?: (row: T) => string }[];
+  canWrite?: boolean;
+  importMode?: ImportMode;
 };
 
-export default function CatalogPage<T extends { id: string }>({ title, load, save, remove, fields, empty, columns }: Props<T>) {
+export default function CatalogPage<T extends { id: string }>({ title, load, save, remove, fields, empty, columns, canWrite = true, importMode }: Props<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [form, setForm] = useState<Partial<T>>(empty);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const refresh = async () => {
     try {
@@ -43,6 +48,7 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!canWrite) return;
     setError("");
     try {
       await save(form);
@@ -56,10 +62,23 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
 
   return (
     <section className="biz">
-      <div className="page-head">
+      <div className="page-head page-head-row">
         <h1>{title}</h1>
+        {canWrite && importMode && (
+          <button type="button" className="ghost" onClick={() => setImportOpen(true)}>
+            Import Excel
+          </button>
+        )}
       </div>
       {error && <div className="alert">{error}</div>}
+      {canWrite && importMode && (
+        <ImportExcelDialog
+          mode={importMode}
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onDone={() => void refresh()}
+        />
+      )}
       <form className="card form-grid catalog-form" onSubmit={onSubmit}>
         {fields.map((field) => {
           const raw = (form as Record<string, unknown>)[field.key];
@@ -106,7 +125,11 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
           );
         })}
         <div className="actions">
-          <button type="submit">{editing ? "Cập nhật" : "Thêm mới"}</button>
+          {canWrite ? (
+            <button type="submit">{editing ? "Cập nhật" : "Thêm mới"}</button>
+          ) : (
+            <p className="muted">Bạn chỉ có quyền xem danh mục này.</p>
+          )}
           {editing && (
             <button
               type="button"
@@ -147,17 +170,21 @@ export default function CatalogPage<T extends { id: string }>({ title, load, sav
                         setEditing(true);
                       }}
                     >
-                      Sửa
+                      {canWrite ? "Sửa" : "Xem"}
                     </button>
+                    {canWrite && (
                     <button
                       type="button"
                       className="danger"
                       onClick={() => {
-                        if (confirm("Xóa dòng này?")) void remove(row.id).then(() => refresh());
+                        if (confirm("Xóa dòng này?")) {
+                          void remove(row.id).then(() => refresh()).catch((err) => setError(err instanceof Error ? err.message : "Không xóa được"));
+                        }
                       }}
                     >
                       Xóa
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>

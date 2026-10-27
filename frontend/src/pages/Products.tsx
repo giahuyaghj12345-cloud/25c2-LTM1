@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { catalogApi, type Product, type ProductPrice } from "../api";
+import { useAuth } from "../auth";
+import { canWriteCatalog, catalogApi, type Product, type ProductPrice } from "../api";
+import ImportExcelDialog from "../components/ImportExcelDialog";
 
 const emptyPrice = (): ProductPrice => ({
   effectiveDate: "",
@@ -54,10 +56,13 @@ const emptyForm = (): Partial<Product> => ({
 });
 
 export default function Products() {
+  const { user } = useAuth();
+  const canWrite = canWriteCatalog(user);
   const [rows, setRows] = useState<Product[]>([]);
   const [form, setForm] = useState<Partial<Product>>(emptyForm);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const refresh = async () => {
     try {
@@ -69,7 +74,10 @@ export default function Products() {
       } catch {
         qty = new Map();
       }
-      setRows(items.map((item) => ({ ...item, quantity: qty.get(item.id) ?? 0 })));
+      setRows(items.map((item) => ({
+        ...item,
+        quantity: qty.get(item.id) ?? Number(item.stockQty) ?? 0,
+      })));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được danh mục sản phẩm");
     }
@@ -95,9 +103,11 @@ export default function Products() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!canWrite) return;
     setError("");
     try {
-      await catalogApi.saveProduct(form);
+      const qty = Number(form.quantity ?? form.stockQty ?? 0) || 0;
+      await catalogApi.saveProduct({ ...form, quantity: qty, stockQty: qty });
       setForm(emptyForm());
       setEditing(false);
       await refresh();
@@ -108,10 +118,23 @@ export default function Products() {
 
   return (
     <section className="biz">
-      <div className="page-head">
+      <div className="page-head page-head-row">
         <h1>Danh mục sản phẩm{editing ? " — đang sửa" : ""}</h1>
+        {canWrite && (
+          <button type="button" className="ghost" onClick={() => setImportOpen(true)}>
+            Import Excel
+          </button>
+        )}
       </div>
       {error && <div className="alert">{error}</div>}
+      {canWrite && (
+        <ImportExcelDialog
+          mode="products"
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onDone={() => void refresh()}
+        />
+      )}
       <form className="card form-grid dmvt-form" onSubmit={onSubmit}>
         <label>
           Mã VT
@@ -222,7 +245,18 @@ export default function Products() {
 
         <label>
           Số tồn
-          <input className="stock-qty" value={Number(form.quantity || 0).toLocaleString("vi-VN", { minimumFractionDigits: 3 })} readOnly />
+          <input
+            className="stock-qty"
+            type="number"
+            min={0}
+            step="0.001"
+            value={Number(form.quantity ?? form.stockQty ?? 0) || 0}
+            onChange={(e) => {
+              const qty = Number(e.target.value) || 0;
+              setForm((current) => ({ ...current, quantity: qty, stockQty: qty }));
+            }}
+            disabled={!canWrite}
+          />
         </label>
         <label>
           Nhóm SP, vật tư 1
@@ -353,7 +387,11 @@ export default function Products() {
         </div>
 
         <div className="actions">
-          <button type="submit">Nhận</button>
+          {canWrite ? (
+            <button type="submit">{editing ? "Cập nhật" : "Thêm mới"}</button>
+          ) : (
+            <p className="muted">Bạn chỉ có quyền xem danh mục sản phẩm.</p>
+          )}
           <button
             type="button"
             className="ghost"
@@ -375,7 +413,8 @@ export default function Products() {
               <th>Tên</th>
               <th>ĐVT</th>
               <th>Nhóm 1</th>
-              <th>Tồn kho</th>
+              <th>Tồn hiện tại</th>
+              <th>Theo dõi</th>
               <th>TT</th>
               <th></th>
             </tr>
@@ -387,6 +426,7 @@ export default function Products() {
                 <td>{row.name}</td>
                 <td>{row.unit}</td>
                 <td>{row.groupCode}</td>
+                <td>{Number(row.quantity ?? row.stockQty ?? 0).toLocaleString("vi-VN")}</td>
                 <td>{row.keepStock ? "Có" : "Không"}</td>
                 <td>{row.status === "1" ? "Sử dụng" : "Ngưng"}</td>
                 <td>
@@ -395,9 +435,12 @@ export default function Products() {
                       type="button"
                       className="ghost"
                       onClick={() => {
+                        const qty = Number(row.quantity ?? row.stockQty ?? 0) || 0;
                         setForm({
                           ...emptyForm(),
                           ...row,
+                          quantity: qty,
+                          stockQty: qty,
                           prices: row.prices?.length
                             ? row.prices.map((price) => ({
                                 ...price,
@@ -408,17 +451,21 @@ export default function Products() {
                         setEditing(true);
                       }}
                     >
-                      Sửa
+                      {canWrite ? "Sửa" : "Xem"}
                     </button>
+                    {canWrite && (
                     <button
                       type="button"
                       className="danger"
                       onClick={() => {
-                        if (confirm("Xóa dòng này?")) void catalogApi.deleteProduct(row.id).then(() => refresh());
+                        if (confirm("Xóa dòng này?")) {
+                          void catalogApi.deleteProduct(row.id).then(() => refresh()).catch((err) => setError(err instanceof Error ? err.message : "Không xóa được"));
+                        }
                       }}
                     >
                       Xóa
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>

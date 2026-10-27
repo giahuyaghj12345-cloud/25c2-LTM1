@@ -586,17 +586,50 @@ public class FrmStockOut : UserControl
                     return;
                 }
             }
+
+            var willPost = txtStatus.Text.Contains("ghi sổ", StringComparison.OrdinalIgnoreCase);
+            var newQty = CollectLineQty();
+            if (newQty.Count == 0)
+            {
+                MessageBox.Show("Thêm ít nhất một dòng vật tư.");
+                return;
+            }
+
+            InventoryDb.Ensure();
             EnsureExtra();
             using var conn = SqlDb.Open();
             using var tran = conn.BeginTransaction();
             try
             {
                 var exists = false;
+                var wasPosted = false;
+                var oldQty = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
                 if (currentId != null)
                 {
-                    using var chk = new SqlCommand("SELECT COUNT(*) FROM dbo.stock_outs WHERE id=@id", conn, tran);
+                    using var chk = new SqlCommand("SELECT status FROM dbo.stock_outs WHERE id=@id", conn, tran);
                     chk.Parameters.Add("@id", SqlDbType.UniqueIdentifier).Value = currentId.Value;
-                    exists = Convert.ToInt32(chk.ExecuteScalar()) > 0;
+                    var stObj = chk.ExecuteScalar();
+                    exists = stObj != null && stObj != DBNull.Value;
+                    if (exists)
+                    {
+                        wasPosted = string.Equals(Convert.ToString(stObj), "posted", StringComparison.OrdinalIgnoreCase);
+                        if (wasPosted) oldQty = LoadPostedQty(conn, tran, currentId.Value);
+                    }
+                }
+
+                if (willPost)
+                {
+                    // hiệu ứng tồn = -new + old (nếu trước đó đã ghi sổ) — đọc tồn trong cùng transaction
+                    foreach (var kv in newQty)
+                    {
+                        var need = kv.Value - (oldQty.TryGetValue(kv.Key, out var o) ? o : 0m);
+                        if (need <= 0m) continue;
+                        if (!InventoryDb.TracksStock(kv.Key)) continue;
+                        var ton = InventoryDb.GetTon(kv.Key, conn, tran);
+                        if (ton < need)
+                            throw new InvalidOperationException(
+                                $"Mã {kv.Key}: tồn {ton:0.####}, cần xuất thêm {need:0.####}.");
+                    }
                 }
 
                 if (!exists)
@@ -654,6 +687,12 @@ public class FrmStockOut : UserControl
                     ins.Parameters.AddWithValue("@hs", Convert.ToString(row.Cells["ma_hs"].Value) ?? "");
                     ins.ExecuteNonQuery();
                 }
+
+                // Cập nhật tồn: hoàn lại phiếu cũ (nếu đã ghi sổ) rồi trừ phiếu mới (nếu ghi sổ)
+                var applyOld = wasPosted ? oldQty : new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+                var applyNew = willPost ? newQty : new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+                InventoryDb.ApplyNet(applyOld, applyNew, conn, tran);
+
                 tran.Commit();
             }
             catch
@@ -664,12 +703,48 @@ public class FrmStockOut : UserControl
             }
             editing = false;
             LoadList();
-            MessageBox.Show("Đã lưu phiếu " + txtSoPhieu.Text);
+            MessageBox.Show(willPost
+                ? "Đã ghi sổ phiếu " + txtSoPhieu.Text + " — đã trừ tồn kho."
+                : "Đã lưu nháp phiếu " + txtSoPhieu.Text + " (chưa trừ tồn).");
         }
         catch (Exception ex)
         {
             MessageBox.Show("Không lưu được: " + ex.Message);
         }
+    }
+
+    Dictionary<string, decimal> CollectLineQty()
+    {
+        var list = new List<(string Ma, decimal Sl)>();
+        foreach (DataGridViewRow row in grid.Rows)
+        {
+            if (row.IsNewRow) continue;
+            var ma = Ui.SuggestCode(row.Cells["ma_sp"].Value);
+            var sl = ToDec(row.Cells["sl"].Value);
+            if (string.IsNullOrWhiteSpace(ma) || sl <= 0m) continue;
+            list.Add((ma, sl));
+        }
+        return InventoryDb.SumLines(list);
+    }
+
+    static Dictionary<string, decimal> LoadPostedQty(SqlConnection conn, SqlTransaction tran, Guid stockOutId)
+    {
+        using var cmd = new SqlCommand(@"
+SELECT ISNULL(p.ma_sp, N'') ma_sp, SUM(ISNULL(l.quantity,0)) sl
+FROM dbo.stock_out_lines l
+LEFT JOIN dbo.dmsp p ON p.id = l.materialId
+WHERE l.stockOutId = @id
+GROUP BY ISNULL(p.ma_sp, N'')", conn, tran);
+        cmd.Parameters.Add("@id", SqlDbType.UniqueIdentifier).Value = stockOutId;
+        var map = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        using var rd = cmd.ExecuteReader();
+        while (rd.Read())
+        {
+            var ma = rd.IsDBNull(0) ? "" : rd.GetString(0).Trim();
+            if (ma.Length == 0) continue;
+            map[ma] = rd.GetDecimal(1);
+        }
+        return map;
     }
 
     void FillHeader(SqlCommand cmd)
@@ -714,7 +789,38 @@ public class FrmStockOut : UserControl
         if (MessageBox.Show("Xóa phiếu này?", "Xóa", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
         try
         {
-            SqlDb.Execute("DELETE FROM dbo.stock_outs WHERE id=@id AND ISNULL(serialCreated,0)=0 AND ISNULL(serialLocked,0)=0", SqlDb.P("@id", currentId));
+            InventoryDb.Ensure();
+            using var conn = SqlDb.Open();
+            using var tran = conn.BeginTransaction();
+            using (var chk = new SqlCommand(
+                       "SELECT status, ISNULL(serialCreated,0), ISNULL(serialLocked,0) FROM dbo.stock_outs WHERE id=@id",
+                       conn, tran))
+            {
+                chk.Parameters.Add("@id", SqlDbType.UniqueIdentifier).Value = currentId.Value;
+                using var rd = chk.ExecuteReader();
+                if (!rd.Read()) throw new InvalidOperationException("Không tìm thấy phiếu.");
+                if (Convert.ToInt32(rd[1]) == 1 || Convert.ToInt32(rd[2]) == 1)
+                    throw new InvalidOperationException("Phiếu đã tạo Serial / khóa, không xóa được.");
+                var posted = string.Equals(Convert.ToString(rd[0]), "posted", StringComparison.OrdinalIgnoreCase);
+                rd.Close();
+                if (posted)
+                {
+                    var old = LoadPostedQty(conn, tran, currentId.Value);
+                    foreach (var kv in old)
+                        InventoryDb.Adjust(kv.Key, kv.Value, conn, tran);
+                }
+            }
+            using (var delL = new SqlCommand("DELETE FROM dbo.stock_out_lines WHERE stockOutId=@id", conn, tran))
+            {
+                delL.Parameters.Add("@id", SqlDbType.UniqueIdentifier).Value = currentId.Value;
+                delL.ExecuteNonQuery();
+            }
+            using (var delH = new SqlCommand("DELETE FROM dbo.stock_outs WHERE id=@id", conn, tran))
+            {
+                delH.Parameters.Add("@id", SqlDbType.UniqueIdentifier).Value = currentId.Value;
+                delH.ExecuteNonQuery();
+            }
+            tran.Commit();
             NewVoucher();
             LoadList();
         }

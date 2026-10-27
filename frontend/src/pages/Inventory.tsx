@@ -42,17 +42,24 @@ export default function Inventory() {
                 </td>
               </tr>
             )}
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const qty = Number(row.quantity) || 0;
+              const min = Number(row.minQty) || 0;
+              const max = Number(row.maxQty) || 0;
+              const stockState =
+                min > 0 && qty <= min ? "Thiếu" : max > 0 && qty >= max ? "Dư" : "Ổn định";
+              return (
               <tr key={row.id}>
                 <td>{row.code}</td>
                 <td>{row.name}</td>
                 <td>{row.unit}</td>
-                <td>{Number(row.quantity).toLocaleString("vi-VN")}</td>
-                <td>{Number(row.minQty || 0).toLocaleString("vi-VN")}</td>
-                <td>{Number(row.maxQty || 0).toLocaleString("vi-VN")}</td>
-                <td>{row.status === "1" ? "Sử dụng" : "Ngưng"}</td>
+                <td>{qty.toLocaleString("vi-VN")}</td>
+                <td>{min.toLocaleString("vi-VN")}</td>
+                <td>{max.toLocaleString("vi-VN")}</td>
+                <td>{stockState} · {row.status === "1" ? "Sử dụng" : "Ngưng"}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

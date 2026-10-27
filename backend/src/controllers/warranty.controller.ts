@@ -32,9 +32,16 @@ function text(value: unknown, max = 200) {
 }
 
 function dateOnly(value: unknown) {
-  const raw = text(value, 30);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  const raw = text(value, 40);
   if (!raw) return null;
-  return raw.slice(0, 10);
+  // ISO / yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return null;
 }
 
 function dateTime(value: unknown) {
@@ -246,16 +253,29 @@ export async function getTicket(req: AuthRequest, res: Response) {
   const lines = (await linesOf("bh_phieu_ct", "phieuId", String(req.params.id))).map((line: Record<string, unknown>) => mapDocLine(line));
   const marks = await AppDataSource.query(
     `SELECT
+       SUM(CASE WHEN ma_gd IN (7, 8) AND status = N'xac_nhan' THEN 1 ELSE 0 END) AS da_xuat,
        SUM(CASE WHEN ma_gd = 10 AND loai_nx = N'nhap' AND status = N'xac_nhan' THEN 1 ELSE 0 END) AS da_nhap,
-       SUM(CASE WHEN ma_gd = 10 AND loai_nx = N'xuat' AND status = N'xac_nhan' THEN 1 ELSE 0 END) AS da_giao
+       SUM(CASE WHEN ma_gd = 10 AND loai_nx = N'xuat' AND status = N'xac_nhan' THEN 1 ELSE 0 END) AS da_giao,
+       SUM(CASE WHEN ma_gd = 11 AND status = N'xac_nhan' THEN 1 ELSE 0 END) AS da_nhap_cu
      FROM dbo.bh_kho WHERE phieuId = @0`,
     [req.params.id]
   );
+  const thu = await AppDataSource.query(
+    `SELECT COUNT(1) AS n FROM dbo.bh_thu WHERE phieuId = @0 AND status <> N'huy'`,
+    [req.params.id]
+  ).catch(() => [{ n: 0 }]);
+  const hd = await AppDataSource.query(
+    `SELECT COUNT(1) AS n FROM dbo.bh_hoadon WHERE phieuId = @0`,
+    [req.params.id]
+  ).catch(() => [{ n: 0 }]);
   res.json({
     ...rows[0],
     lines,
-    da_nhap: Number(marks[0]?.da_nhap || 0) > 0 ? 1 : 0,
+    da_xuat: Number(marks[0]?.da_xuat || 0) > 0 ? 1 : 0,
+    da_nhap: Number(marks[0]?.da_nhap || 0) > 0 || Number(marks[0]?.da_nhap_cu || 0) > 0 ? 1 : 0,
     da_giao: Number(marks[0]?.da_giao || 0) > 0 ? 1 : 0,
+    da_thu: Number(thu[0]?.n || 0) > 0 ? 1 : 0,
+    da_hd: Number(hd[0]?.n || 0) > 0 ? 1 : 0,
   });
 }
 
@@ -281,15 +301,26 @@ export async function lookupSerialForTicket(req: AuthRequest, res: Response) {
   res.json(info);
 }
 
+async function ensureTicketStaffCols() {
+  await AppDataSource.query(`
+    IF COL_LENGTH('dbo.bh_phieu', 'nv_tiep_nhan') IS NULL ALTER TABLE dbo.bh_phieu ADD nv_tiep_nhan NVARCHAR(80) NULL;
+    IF COL_LENGTH('dbo.bh_phieu', 'nv_ktv') IS NULL ALTER TABLE dbo.bh_phieu ADD nv_ktv NVARCHAR(80) NULL;
+    IF COL_LENGTH('dbo.bh_phieu', 'nv_ketoan') IS NULL ALTER TABLE dbo.bh_phieu ADD nv_ketoan NVARCHAR(80) NULL;
+  `).catch(() => undefined);
+}
+
 export async function saveTicket(req: AuthRequest, res: Response) {
   const body = req.body || {};
   const id = text(body.id, 40) || text(req.params.id, 40) || null;
+  await ensureTicketStaffCols();
   if (id) {
     const cur = await AppDataSource.query(`SELECT status, hoan_tat FROM dbo.bh_phieu WHERE id = @0`, [id]);
     if (!cur[0]) return fail(res, 404, "Không thấy phiếu");
-    if (Number(cur[0].hoan_tat) === 1) return fail(res, 400, "Phiếu đã hoàn tất sửa chữa — không sửa được.");
+    if (Number(cur[0].hoan_tat) === 1 || cur[0].status === "hoan_tat") {
+      return fail(res, 400, "Phiếu đã hoàn tất sửa chữa — không sửa được.");
+    }
     if (cur[0].status === "huy") return fail(res, 400, "Phiếu đã hủy.");
-    if (cur[0].status !== "nhap") return fail(res, 400, "Phiếu đã ghi sổ — chỉ xem.");
+    // GGV: sau ghi sổ vẫn được Sửa rồi Lưu lại (không ghi sổ lần 2)
   }
   const soSerial = text(body.so_serial, 50);
   const info = await serialInfo(soSerial);
@@ -301,8 +332,11 @@ export async function saveTicket(req: AuthRequest, res: Response) {
   const docId = id || (await AppDataSource.query(`SELECT NEWID() AS id`))[0].id;
   const soCt = text(body.so_ct, 30) || (await nextSo("BH"));
   const ngay = dateOnly(body.ngay_ct) || new Date().toISOString().slice(0, 10);
-  const loai = [1, 2, 3].includes(Number(body.loai_bh)) ? Number(body.loai_bh) : 1;
+  const loai = [1, 2, 3, 4, 5, 6].includes(Number(body.loai_bh)) ? Number(body.loai_bh) : 1;
   const user = await actor(req);
+  const nvTiepNhan = text(body.nv_tiep_nhan, 80);
+  const nvKtv = text(body.nv_ktv, 80);
+  const nvKetoan = text(body.nv_ketoan, 80);
   await AppDataSource.transaction(async (manager) => {
     const exists = await manager.query(`SELECT 1 AS n FROM dbo.bh_phieu WHERE id = @0`, [docId]);
     const params = [
@@ -315,6 +349,7 @@ export async function saveTicket(req: AuthRequest, res: Response) {
       text(body.hd_ten, 200), text(body.hd_dia_chi, 300), text(body.hd_mst, 20), text(body.hd_cccd, 20), text(body.hd_dt, 30),
       text(body.hd_email, 100), text(body.bg_id, 40) || null, text(body.so_bg, 30),
       sum.tTcong, sum.tCkTc, sum.tPhutung, sum.tCkPt, sum.tThue, sum.tTt,
+      nvTiepNhan, nvKtv, nvKetoan,
     ];
     if (exists.length) {
       await manager.query(
@@ -323,7 +358,7 @@ export async function saveTicket(req: AuthRequest, res: Response) {
           tt_sp=@18, ngay_hen=@19, ghi_chu=@20, loai_bh=@22, mst=@23, cccd=@24, lo_sx=@25, tg_sd=@26, nguon_goc=@27,
           lay_pt_cu=@28, tg_tiep_nhan=@29, tg_hoan_tra_dk=@30, xuat_hd=@31, hd_ten=@32, hd_dia_chi=@33, hd_mst=@34,
           hd_cccd=@35, hd_dt=@36, hd_email=@37, bg_id=@38, so_bg=@39, t_tcong=@40, t_ck_tc=@41, t_phutung=@42,
-          t_ck_pt=@43, t_thue=@44, t_tt=@45, updatedAt=GETDATE()
+          t_ck_pt=@43, t_thue=@44, t_tt=@45, nv_tiep_nhan=@46, nv_ktv=@47, nv_ketoan=@48, updatedAt=GETDATE()
          WHERE id=@0`,
         params
       );
@@ -333,9 +368,9 @@ export async function saveTicket(req: AuthRequest, res: Response) {
           ma_sp, ten_sp, hang_xe, ten_xe, nam_sx, odo, bien_so, yeu_cau, tu_van, tt_sp, ngay_hen, ghi_chu, createdBy,
           loai_bh, mst, cccd, lo_sx, tg_sd, nguon_goc, lay_pt_cu, tg_tiep_nhan, tg_hoan_tra_dk, xuat_hd,
           hd_ten, hd_dia_chi, hd_mst, hd_cccd, hd_dt, hd_email, bg_id, so_bg,
-          t_tcong, t_ck_tc, t_phutung, t_ck_pt, t_thue, t_tt)
+          t_tcong, t_ck_tc, t_phutung, t_ck_pt, t_thue, t_tt, nv_tiep_nhan, nv_ktv, nv_ketoan)
          VALUES (@0,@1,@2,N'nhap',@3,@4,@5,@6,@7,@8,@9,@10,@11,@12,@13,@14,@15,@16,@17,@18,@19,@20,@21,
-          @22,@23,@24,@25,@26,@27,@28,@29,@30,@31,@32,@33,@34,@35,@36,@37,@38,@39,@40,@41,@42,@43,@44,@45)`,
+          @22,@23,@24,@25,@26,@27,@28,@29,@30,@31,@32,@33,@34,@35,@36,@37,@38,@39,@40,@41,@42,@43,@44,@45,@46,@47,@48)`,
         params
       );
     }
@@ -357,15 +392,32 @@ export async function postTicket(req: AuthRequest, res: Response) {
 }
 
 export async function completeTicket(req: AuthRequest, res: Response) {
-  const cur = await AppDataSource.query(`SELECT status FROM dbo.bh_phieu WHERE id = @0`, [req.params.id]);
+  const cur = await AppDataSource.query(`SELECT status, loai_bh, so_serial FROM dbo.bh_phieu WHERE id = @0`, [req.params.id]);
   if (!cur[0]) return fail(res, 404, "Không thấy phiếu");
   if (!POSTED_TICKET.includes(String(cur[0].status)) && cur[0].status !== "hoan_tat") {
     return fail(res, 400, "Ghi sổ phiếu trước khi hoàn tất sửa chữa.");
   }
-  await AppDataSource.query(
-    `UPDATE dbo.bh_phieu SET hoan_tat = 1, status = N'hoan_tat', updatedAt = GETDATE() WHERE id = @0`,
-    [req.params.id]
-  );
+  const loai = Number(cur[0].loai_bh || 1);
+  const doneStatus: Record<number, string> = {
+    1: "Đã sửa chữa xong",
+    4: "Đã bảo dưỡng xong",
+    5: "Đã bảo hành xong",
+    6: "Đã lắp đặt xong",
+  };
+  await AppDataSource.transaction(async (manager) => {
+    await manager.query(
+      `UPDATE dbo.bh_phieu SET hoan_tat = 1, status = N'hoan_tat', tg_hoan_tra_tt = GETDATE(), updatedAt = GETDATE() WHERE id = @0`,
+      [req.params.id]
+    );
+    const serial = String(cur[0].so_serial || "").trim();
+    const tinhTrang = doneStatus[loai];
+    if (serial && tinhTrang) {
+      await manager.query(
+        `UPDATE dbo.dm_serial SET tinh_trang = @1, updatedAt = GETDATE() WHERE so_serial = @0`,
+        [serial, tinhTrang]
+      ).catch(() => undefined);
+    }
+  });
   return getTicket(req, res);
 }
 
@@ -426,6 +478,7 @@ export async function saveWarehouse(req: AuthRequest, res: Response) {
   const loai11 = loai === 2 || loai === 3;
   if (maGd === 8 && !loai11) return fail(res, 400, "MGD 8 chỉ dùng cho Sale 1 đổi 1 hoặc DV 1 đổi 1.");
   if (maGd === 11 && !loai11) return fail(res, 400, "Nhập serial cũ chỉ dùng cho phiếu 1 đổi 1.");
+  if (maGd === 10 && loai11) return fail(res, 400, "Nhập kho SP / xuất giao KH chỉ dùng nhóm sửa chữa (1,4,5,6).");
   const loaiNx = maGd === 10 ? (text(body.loai_nx, 10) === "nhap" ? "nhap" : "xuat") : maGd === 11 ? "nhap" : "xuat";
   if (maGd === 10 && loaiNx === "xuat" && loai11) return fail(res, 400, "Phiếu 1 đổi 1 không xuất giao khách.");
   if (maGd === 10 && loaiNx === "xuat") {
@@ -587,21 +640,48 @@ export async function saveReceipt(req: AuthRequest, res: Response) {
     .filter((line: { so_tien: number }) => line.so_tien > 0);
   const soTien = lines.length ? lines.reduce((sum: number, line: { so_tien: number }) => sum + line.so_tien, 0) : num(body.so_tien, Number(ticket[0].t_tt || 0));
   if (soTien <= 0) return fail(res, 400, "Số tiền thu phải lớn hơn 0.");
-  const docId = text(body.id, 40) || (await AppDataSource.query(`SELECT NEWID() AS id`))[0].id;
-  const soCt = text(body.so_ct, 30) || (await nextSo("TH"));
+
+  // Một phiếu BH chỉ một phiếu thu: nếu đã có thì cập nhật
+  let docId = text(body.id, 40);
+  let soCt = text(body.so_ct, 30);
+  if (!docId) {
+    const already = await AppDataSource.query(`SELECT id, so_ct FROM dbo.bh_thu WHERE phieuId = @0`, [phieuId]);
+    if (already[0]) {
+      docId = String(already[0].id);
+      soCt = String(already[0].so_ct || soCt || "");
+    } else {
+      docId = (await AppDataSource.query(`SELECT NEWID() AS id`))[0].id;
+      soCt = soCt || (await nextSo("TH"));
+    }
+  } else if (!soCt) {
+    const existed = await AppDataSource.query(`SELECT so_ct FROM dbo.bh_thu WHERE id = @0`, [docId]);
+    soCt = String(existed[0]?.so_ct || "") || (await nextSo("TH"));
+  }
+
   const hinhThuc = text(body.hinh_thuc, 30) === "ck" ? "Chuyển khoản" : "Tiền mặt";
+  const maKh = text(body.ma_kh, 50) || ticket[0].ma_kh || "";
+  const tenKh = text(body.ten_kh, 200) || ticket[0].ten_kh || "";
+  const diaChi = text(body.dia_chi, 300) || ticket[0].dia_chi || "";
+  const nguoiNop = text(body.nguoi_nop, 200) || ticket[0].ten_kh || "";
+  const lyDo = text(body.ly_do, 300) || "Thu tiền sửa chữa / phụ tùng BH";
+  const dienGiai = text(body.dien_giai, 300) || "Thu bảo hành";
+  const quyenSo = text(body.quyen_so, 20) || "PT001";
+
   await AppDataSource.transaction(async (manager) => {
-    const exists = await manager.query(`SELECT 1 AS n FROM dbo.bh_thu WHERE id = @0`, [docId]);
+    const exists = await manager.query(`SELECT so_ct FROM dbo.bh_thu WHERE id = @0`, [docId]);
     if (!exists.length) {
       await manager.query(
         `INSERT INTO dbo.bh_thu (id, phieuId, so_ct, ngay_ct, so_tien, hinh_thuc, dien_giai, ma_kh, ten_kh, dia_chi, nguoi_nop, ly_do, status, quyen_so)
          VALUES (@0,@1,@2,CONVERT(date,GETDATE()),@3,@4,@5,@6,@7,@8,@9,@10,N'da_thu',@11)`,
-        [
-          docId, phieuId, soCt, soTien, hinhThuc, text(body.dien_giai, 300) || "Thu bảo hành",
-          text(body.ma_kh, 50) || ticket[0].ma_kh || "", text(body.ten_kh, 200) || ticket[0].ten_kh || "", text(body.dia_chi, 300) || ticket[0].dia_chi || "",
-          text(body.nguoi_nop, 200) || ticket[0].ten_kh || "", text(body.ly_do, 300) || "Thu tiền sửa chữa / phụ tùng BH",
-          text(body.quyen_so, 20) || "PT001",
-        ]
+        [docId, phieuId, soCt, soTien, hinhThuc, dienGiai, maKh, tenKh, diaChi, nguoiNop, lyDo, quyenSo]
+      );
+    } else {
+      await manager.query(
+        `UPDATE dbo.bh_thu
+         SET phieuId=@1, so_tien=@2, hinh_thuc=@3, dien_giai=@4, ma_kh=@5, ten_kh=@6, dia_chi=@7,
+             nguoi_nop=@8, ly_do=@9, quyen_so=@10, status=N'da_thu'
+         WHERE id=@0`,
+        [docId, phieuId, soTien, hinhThuc, dienGiai, maKh, tenKh, diaChi, nguoiNop, lyDo, quyenSo]
       );
     }
     await manager.query(`DELETE FROM dbo.bh_thu_ct WHERE thuId = @0`, [docId]);
@@ -802,7 +882,52 @@ export async function suggestWarranty(_req: AuthRequest, res: Response) {
     `SELECT TOP 400 so_serial, ma_kh, ten_kh, ma_sp, ten_sp, so_batch
      FROM dbo.dm_serial ORDER BY createdAt DESC`
   );
-  res.json({ customers, serials });
+  const staff = await AppDataSource.query(
+    `SELECT username, role FROM dbo.users
+     WHERE status = N'active' AND role IN (N'admin', N'warranty', N'warehouse', N'sales')
+     ORDER BY username`
+  ).catch(() => []);
+  res.json({ customers, serials, staff });
+}
+
+/** Báo cáo serial — tương đương menu GGV 61.05.01 */
+export async function serialReport(req: AuthRequest, res: Response) {
+  const q = text(req.query.q, 80);
+  const maKh = text(req.query.ma_kh, 50);
+  const maSp = text(req.query.ma_sp, 50);
+  const tinh = text(req.query.tinh_trang, 100);
+  const from = dateOnly(req.query.from);
+  const to = dateOnly(req.query.to);
+  const rows = await AppDataSource.query(
+    `SELECT TOP 1000
+       so_serial, ma_kh, ten_kh, ma_sp, ten_sp, dvt, so_batch, so_px, ngay_xuat,
+       trang_thai, tinh_trang, ngay_bh_tu, ngay_bh_den, thoi_gian_bh,
+       createdAt, createdBy, changedAt, changedBy,
+       kh_kich_hoat, dt_kh_bh, email_kh_bh
+     FROM dbo.dm_serial
+     WHERE (@0 = N'' OR so_serial LIKE N'%' + @0 + N'%' OR ten_kh LIKE N'%' + @0 + N'%' OR ten_sp LIKE N'%' + @0 + N'%')
+       AND (@1 = N'' OR ma_kh = @1)
+       AND (@2 = N'' OR ma_sp = @2)
+       AND (@3 = N'' OR tinh_trang = @3)
+       AND (@4 IS NULL OR CONVERT(date, ISNULL(ngay_xuat, createdAt)) >= @4)
+       AND (@5 IS NULL OR CONVERT(date, ISNULL(ngay_xuat, createdAt)) <= @5)
+     ORDER BY createdAt DESC`,
+    [q, maKh, maSp, tinh, from, to]
+  );
+  const summary = await AppDataSource.query(
+    `SELECT tinh_trang, COUNT(1) AS so_luong
+     FROM dbo.dm_serial
+     WHERE (@0 = N'' OR so_serial LIKE N'%' + @0 + N'%' OR ten_kh LIKE N'%' + @0 + N'%' OR ten_sp LIKE N'%' + @0 + N'%')
+       AND (@1 = N'' OR ma_kh = @1)
+       AND (@2 = N'' OR ma_sp = @2)
+       AND (@3 = N'' OR tinh_trang = @3)
+       AND (@4 IS NULL OR CONVERT(date, ISNULL(ngay_xuat, createdAt)) >= @4)
+       AND (@5 IS NULL OR CONVERT(date, ISNULL(ngay_xuat, createdAt)) <= @5)
+     GROUP BY tinh_trang
+     ORDER BY so_luong DESC`,
+    [q, maKh, maSp, tinh, from, to]
+  );
+  res.json({ rows, summary, total: rows.length });
 }
 
 export async function listKm(_req: AuthRequest, res: Response) {
@@ -928,7 +1053,7 @@ export async function warrantyBoard(_req: AuthRequest, res: Response) {
     };
   });
   const monthOf = new Map(months.map((item) => [item.key, item]));
-  const loaiKey = (loai: number) => (loai === 2 ? "sale" : loai === 3 ? "dv" : "sua");
+  const loaiKey = (loai: number) => (loai === 2 ? "sale" : loai === 3 ? "dv" : "sua"); // 1,4,5,6 → sửa chữa
   let sua = 0;
   let sale = 0;
   let dv = 0;

@@ -117,7 +117,7 @@ public class FrmMain : Form
     {
         sidebar.Dock = DockStyle.Left;
         sidebar.Width = 248;
-        sidebar.BackColor = Ui.Panel;
+        sidebar.BackColor = Ui.SideBg;
         sidebar.Padding = new Padding(12, 16, 12, 12);
         sidebar.Paint += (_, e) =>
         {
@@ -125,15 +125,16 @@ public class FrmMain : Form
             e.Graphics.DrawLine(pen, sidebar.Width - 1, 0, sidebar.Width - 1, sidebar.Height);
         };
 
-        var avatar = new Panel { Dock = DockStyle.Top, Height = 58, Cursor = Cursors.Hand };
+        var avatar = new Panel { Dock = DockStyle.Top, Height = 64, Cursor = Cursors.Hand, BackColor = Ui.SideBg };
         avHead.SetFrom(Session.Avatar, Session.Username);
         lblUser.AutoSize = false;
-        lblUser.Bounds = new Rectangle(52, 8, 170, 22);
+        lblUser.Bounds = new Rectangle(52, 10, 170, 22);
         lblUser.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+        lblUser.ForeColor = Ui.SideInk;
         lblUser.Text = Session.Username;
         lblRole.AutoSize = false;
-        lblRole.Bounds = new Rectangle(52, 30, 170, 20);
-        lblRole.ForeColor = Ui.Muted;
+        lblRole.Bounds = new Rectangle(52, 32, 170, 20);
+        lblRole.ForeColor = Ui.SideMuted;
         lblRole.Font = Ui.Subtitle;
         lblRole.Text = Session.RoleLabel;
         avatar.Controls.Add(avHead);
@@ -148,51 +149,65 @@ public class FrmMain : Form
         navHost.FlowDirection = FlowDirection.TopDown;
         navHost.WrapContents = false;
         navHost.AutoScroll = true;
-        navHost.BackColor = Ui.Panel;
+        navHost.BackColor = Ui.SideBg;
         navHost.Padding = new Padding(0, 8, 0, 0);
 
-        navHost.Controls.Add(Nav("home", "Tổng quan", Icons.Home));
-        navHost.Controls.Add(Nav("profile", "Hồ sơ", Icons.User));
-        if (Session.IsAdmin)
+        if (Session.CanAccess("home"))
+            navHost.Controls.Add(Nav("home", "Tổng quan", Icons.Home));
+        if (Session.CanAccess("profile"))
+            navHost.Controls.Add(Nav("profile", "Hồ sơ", Icons.User));
+        if (Session.CanAccess("users"))
             navHost.Controls.Add(Nav("users", "Phân quyền", Icons.Shield));
 
-        navHost.Controls.Add(GroupBtn("1. Danh mục", () =>
+        var catalogItems = NavIf("products", "Danh mục sản phẩm", Icons.Box, 200)
+            .Concat(NavIf("customers", "Danh mục khách hàng", Icons.User, 200))
+            .Concat(NavIf("labors", "Danh mục tiền công", Icons.Coin, 200))
+            .ToArray();
+        if (catalogItems.Length > 0)
         {
-            catalogOpen = !catalogOpen;
-            if (catalogSub != null) catalogSub.Visible = catalogOpen && !collapsed;
-        }));
-        catalogSub = Sub(
-            Nav("products", "Danh mục sản phẩm", Icons.Box, 200),
-            Nav("customers", "Danh mục khách hàng", Icons.User, 200),
-            Nav("labors", "Danh mục tiền công", Icons.Coin, 200));
-        navHost.Controls.Add(catalogSub);
+            navHost.Controls.Add(GroupBtn("1. Danh mục", () =>
+            {
+                catalogOpen = !catalogOpen;
+                if (catalogSub != null) catalogSub.Visible = catalogOpen && !collapsed;
+            }));
+            catalogSub = Sub(catalogItems);
+            navHost.Controls.Add(catalogSub);
+        }
 
-        navHost.Controls.Add(GroupBtn("2. Kho", () =>
+        var warehouseItems = NavIf("pxk", "Phiếu xuất kho", Icons.Doc, 200)
+            .Concat(NavIf("ton", "Tồn kho sản phẩm", Icons.Box, 200))
+            .ToArray();
+        if (warehouseItems.Length > 0)
         {
-            warehouseOpen = !warehouseOpen;
-            if (warehouseSub != null) warehouseSub.Visible = warehouseOpen && !collapsed;
-        }));
-        warehouseSub = Sub(
-            Nav("pxk", "Phiếu xuất kho", Icons.Doc, 200),
-            Nav("ton", "Tồn kho sản phẩm", Icons.Box, 200));
-        navHost.Controls.Add(warehouseSub);
+            navHost.Controls.Add(GroupBtn("2. Kho", () =>
+            {
+                warehouseOpen = !warehouseOpen;
+                if (warehouseSub != null) warehouseSub.Visible = warehouseOpen && !collapsed;
+            }));
+            warehouseSub = Sub(warehouseItems);
+            navHost.Controls.Add(warehouseSub);
+        }
 
-        if (Session.SerialAllowed)
+        if (Session.CanAccess("serial"))
             navHost.Controls.Add(Nav("serial", "3. Tạo số Serial", Icons.Serial));
 
-        navHost.Controls.Add(GroupBtn("4. Bảo hành", () =>
+        var warrantyItems = NavIf("bh_phieu", "Phiếu bảo hành", Icons.Doc, 200)
+            .Concat(NavIf("bh_bg", "Báo giá BH", Icons.Coin, 200))
+            .Concat(NavIf("bh_kho", "Kho bảo hành", Icons.Box, 200))
+            .Concat(NavIf("bh_thu", "Thu phụ tùng BH", Icons.Coin, 200))
+            .Concat(NavIf("bh_hd", "Hóa đơn BH", Icons.Doc, 200))
+            .Concat(NavIf("bh_seri", "Tra cứu serial", Icons.Serial, 200))
+            .ToArray();
+        if (warrantyItems.Length > 0)
         {
-            warrantyOpen = !warrantyOpen;
-            if (warrantySub != null) warrantySub.Visible = warrantyOpen && !collapsed;
-        }));
-        warrantySub = Sub(
-            Nav("bh_phieu", "Phiếu bảo hành", Icons.Doc, 200),
-            Nav("bh_bg", "Báo giá BH", Icons.Coin, 200),
-            Nav("bh_kho", "Kho bảo hành", Icons.Box, 200),
-            Nav("bh_thu", "Thu phụ tùng BH", Icons.Coin, 200),
-            Nav("bh_hd", "Hóa đơn BH", Icons.Doc, 200),
-            Nav("bh_seri", "Tra cứu serial", Icons.Serial, 200));
-        navHost.Controls.Add(warrantySub);
+            navHost.Controls.Add(GroupBtn("4. Bảo hành", () =>
+            {
+                warrantyOpen = !warrantyOpen;
+                if (warrantySub != null) warrantySub.Visible = warrantyOpen && !collapsed;
+            }));
+            warrantySub = Sub(warrantyItems);
+            navHost.Controls.Add(warrantySub);
+        }
 
         sidebar.Controls.Add(navHost);
         sidebar.Controls.Add(avatar);
@@ -206,7 +221,8 @@ public class FrmMain : Form
             Width = 220,
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
-            Margin = new Padding(12, 0, 0, 6),
+            Margin = new Padding(8, 0, 0, 6),
+            BackColor = Ui.SideBg,
         };
         foreach (var c in items) p.Controls.Add(c);
         return p;
@@ -218,20 +234,26 @@ public class FrmMain : Form
         {
             Text = text,
             Width = 216,
-            Height = 36,
+            Height = 32,
             FlatStyle = FlatStyle.Flat,
             TextAlign = ContentAlignment.MiddleLeft,
-            BackColor = Ui.Panel,
-            ForeColor = Ui.Ink,
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            BackColor = Ui.SideBg,
+            ForeColor = Ui.SideMuted,
+            Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
             Cursor = Cursors.Hand,
-            Margin = new Padding(0, 10, 0, 2),
+            Margin = new Padding(0, 12, 0, 2),
             Tag = "group",
         };
         b.FlatAppearance.BorderSize = 0;
-        b.FlatAppearance.MouseOverBackColor = Ui.BrandSoft;
+        b.FlatAppearance.MouseOverBackColor = Ui.SideHover;
         b.Click += (_, _) => toggle();
         return b;
+    }
+
+    IEnumerable<Control> NavIf(string key, string text, Action<Graphics, Rectangle, Color?> icon, int width = 216)
+    {
+        if (!Session.CanAccess(key)) return [];
+        return [Nav(key, text, icon, width)];
     }
 
     Button Nav(string key, string text, Action<Graphics, Rectangle, Color?> icon, int width = 216)
@@ -240,19 +262,23 @@ public class FrmMain : Form
         {
             Text = "    " + text,
             Width = width,
-            Height = 38,
+            Height = 36,
             FlatStyle = FlatStyle.Flat,
             TextAlign = ContentAlignment.MiddleLeft,
-            BackColor = Ui.Panel,
-            ForeColor = Ui.Muted,
+            BackColor = Ui.SideBg,
+            ForeColor = Ui.SideMuted,
             Font = Ui.Nav,
             Cursor = Cursors.Hand,
             Tag = key,
-            Margin = new Padding(0, 2, 0, 2),
+            Margin = new Padding(0, 1, 0, 1),
         };
         b.FlatAppearance.BorderSize = 0;
-        b.FlatAppearance.MouseOverBackColor = Ui.BrandSoft;
-        b.Paint += (_, e) => icon(e.Graphics, new Rectangle(10, 9, 18, 18), Ui.BrandDark);
+        b.FlatAppearance.MouseOverBackColor = Ui.SideHover;
+        b.Paint += (_, e) =>
+        {
+            var on = b.BackColor == Ui.SideActive || b.ForeColor == Ui.BrandDark;
+            icon(e.Graphics, new Rectangle(10, 8, 18, 18), on ? Ui.Brand : Ui.SideMuted);
+        };
         b.Click += (_, _) => QueueShow(key);
         navMap[key] = b;
         return b;
@@ -288,10 +314,10 @@ public class FrmMain : Form
         content.BackColor = Ui.Bg;
         if (content.Parent != null) content.Parent.BackColor = Ui.Bg;
         topbar.BackColor = Ui.Panel;
-        sidebar.BackColor = Ui.Panel;
+        sidebar.BackColor = Ui.SideBg;
         noticeBox.BackColor = Ui.Panel;
-        lblUser.ForeColor = Ui.Ink;
-        lblRole.ForeColor = Ui.Muted;
+        lblUser.ForeColor = Ui.SideInk;
+        lblRole.ForeColor = Ui.SideMuted;
         btnTheme.Text = Ui.Dark ? "Sáng" : "Tối";
         foreach (var b in new[] { btnTheme, btnHide, btnLogout })
         {
@@ -300,9 +326,9 @@ public class FrmMain : Form
             b.FlatAppearance.BorderColor = Ui.Line;
             b.FlatAppearance.MouseOverBackColor = Ui.BrandSoft;
         }
-        navHost.BackColor = Ui.Panel;
+        navHost.BackColor = Ui.SideBg;
         foreach (var btn in navMap.Values)
-            btn.FlatAppearance.MouseOverBackColor = Ui.BrandSoft;
+            btn.FlatAppearance.MouseOverBackColor = Ui.SideHover;
         PaintGroups(sidebar);
         if (!string.IsNullOrEmpty(shown))
             Highlight(shown);
@@ -315,9 +341,9 @@ public class FrmMain : Form
         {
             if (c is Button b && Equals(b.Tag, "group"))
             {
-                b.BackColor = Ui.Panel;
-                b.ForeColor = Ui.Ink;
-                b.FlatAppearance.MouseOverBackColor = Ui.BrandSoft;
+                b.BackColor = Ui.SideBg;
+                b.ForeColor = Ui.SideMuted;
+                b.FlatAppearance.MouseOverBackColor = Ui.SideHover;
             }
             PaintGroups(c);
         }
@@ -325,12 +351,14 @@ public class FrmMain : Form
 
     void QueueShow(string key, bool force = false)
     {
+        if (!Session.CanAccess(key)) key = "home";
         if (navigating || (!force && shown == key)) return;
         BeginInvoke(() => ShowPage(key, force));
     }
 
     void ShowPage(string key, bool force = false)
     {
+        if (!Session.CanAccess(key)) key = "home";
         if (navigating || (!force && shown == key)) return;
         navigating = true;
         UseWaitCursor = true;
@@ -393,9 +421,10 @@ public class FrmMain : Form
         foreach (var (k, btn) in navMap)
         {
             var on = k == key;
-            btn.BackColor = on ? Ui.BrandSoft : Ui.Panel;
-            btn.ForeColor = on ? Ui.BrandDark : Ui.Muted;
-            btn.Font = new Font("Segoe UI", 10, on ? FontStyle.Bold : FontStyle.Regular);
+            btn.BackColor = on ? Ui.SideActive : Ui.SideBg;
+            btn.ForeColor = on ? Ui.BrandDark : Ui.SideMuted;
+            btn.Font = new Font("Segoe UI", 9.75f, on ? FontStyle.Bold : FontStyle.Regular);
+            btn.Invalidate();
         }
     }
 
@@ -466,73 +495,65 @@ public class FrmHome : UserControl
         };
         wrap.Controls.Add(new Label
         {
-            Text = "Tổng quan",
+            Text = "Xin chào, " + (string.IsNullOrWhiteSpace(Session.Username) ? "bạn" : Session.Username),
             Font = Ui.Title,
             AutoSize = true,
             ForeColor = Ui.Ink,
         });
         wrap.Controls.Add(new Label
         {
-            Text = "Chọn nhóm chức năng, rồi bấm icon để vào trang",
+            Text = "Chọn chức năng bên dưới hoặc dùng menu trái. Giao diện gọn cho kho & bảo hành.",
             AutoSize = true,
             ForeColor = Ui.Muted,
-            Margin = new Padding(0, 0, 0, 18),
+            Margin = new Padding(0, 4, 0, 20),
         });
 
-        wrap.Controls.Add(Section("1", "Danh mục"));
-        wrap.Controls.Add(Row(
-            Tile("DM sản phẩm", Color.FromArgb(56, 189, 248), Icons.Box, "products"),
-            Tile("DM khách hàng", Color.FromArgb(129, 140, 248), Icons.User, "customers"),
-            Tile("DM tiền công", Color.FromArgb(45, 212, 191), Icons.Coin, "labors")));
+        AddSection(wrap, "1", "Danh mục",
+            TileIf("Sản phẩm", Ui.Brand, Icons.Box, "products"),
+            TileIf("Khách hàng", Ui.Brand, Icons.User, "customers"),
+            TileIf("Tiền công", Ui.Brand, Icons.Coin, "labors"));
 
-        wrap.Controls.Add(Section("2", "Kho"));
-        wrap.Controls.Add(Row(
-            Tile("Phiếu xuất kho", Color.FromArgb(251, 146, 60), Icons.Doc, "pxk"),
-            Tile("Tồn kho sản phẩm", Color.FromArgb(79, 70, 229), Icons.Box, "ton")));
+        AddSection(wrap, "2", "Kho",
+            TileIf("Phiếu xuất kho", Ui.Brand, Icons.Doc, "pxk"),
+            TileIf("Tồn kho", Ui.Brand, Icons.Box, "ton"));
 
-        if (Session.SerialAllowed)
-        {
-            wrap.Controls.Add(Section("3", "Tạo số Serial"));
-            wrap.Controls.Add(Row(
-                Tile("Tạo số Serial", Color.FromArgb(5, 150, 105), Icons.Serial, "serial")));
-        }
+        AddSection(wrap, "3", "Serial",
+            TileIf("Tạo số Serial", Ui.Brand, Icons.Serial, "serial"));
 
-        wrap.Controls.Add(Section("4", "Bảo hành"));
-        wrap.Controls.Add(Row(
-            Tile("Phiếu bảo hành", Color.FromArgb(244, 114, 182), Icons.Doc, "bh_phieu"),
-            Tile("Báo giá BH", Color.FromArgb(251, 191, 36), Icons.Coin, "bh_bg"),
-            Tile("Kho bảo hành", Color.FromArgb(96, 165, 250), Icons.Box, "bh_kho")));
-        wrap.Controls.Add(Row(
-            Tile("Thu phụ tùng BH", Color.FromArgb(52, 211, 153), Icons.Coin, "bh_thu"),
-            Tile("Hóa đơn BH", Color.FromArgb(167, 139, 250), Icons.Doc, "bh_hd"),
-            Tile("Tra cứu serial", Color.FromArgb(45, 212, 191), Icons.Serial, "bh_seri")));
+        AddSection(wrap, "4", "Bảo hành",
+            TileIf("Phiếu bảo hành", Ui.Brand, Icons.Doc, "bh_phieu"),
+            TileIf("Báo giá", Ui.Brand, Icons.Coin, "bh_bg"),
+            TileIf("Kho bảo hành", Ui.Brand, Icons.Box, "bh_kho"),
+            TileIf("Thu phụ tùng", Ui.Brand, Icons.Coin, "bh_thu"),
+            TileIf("Hóa đơn", Ui.Brand, Icons.Doc, "bh_hd"),
+            TileIf("Tra cứu serial", Ui.Brand, Icons.Serial, "bh_seri"));
 
         Controls.Add(wrap);
     }
 
+    void AddSection(FlowLayoutPanel wrap, string num, string title, params Control?[] tiles)
+    {
+        var visible = tiles.Where(t => t != null).Cast<Control>().ToArray();
+        if (visible.Length == 0) return;
+        wrap.Controls.Add(Section(num, title));
+        for (var i = 0; i < visible.Length; i += 3)
+            wrap.Controls.Add(Row(visible.Skip(i).Take(3).ToArray()));
+    }
+
+    Control? TileIf(string label, Color tone, Action<Graphics, Rectangle, Color?> icon, string key)
+        => Session.CanAccess(key) ? Tile(label, tone, icon, key) : null;
+
     static Control Section(string num, string title)
     {
-        var p = new Panel { Width = 420, Height = 36, Margin = new Padding(0, 10, 0, 8) };
-        var badge = new Label
-        {
-            Text = num,
-            AutoSize = false,
-            Size = new Size(28, 28),
-            Location = new Point(0, 2),
-            TextAlign = ContentAlignment.MiddleCenter,
-            BackColor = Ui.Brand,
-            ForeColor = Color.White,
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
-        };
+        var p = new Panel { Width = 560, Height = 32, Margin = new Padding(0, 12, 0, 6) };
         var t = new Label
         {
-            Text = title,
+            Text = title.ToUpperInvariant(),
             AutoSize = true,
-            Location = new Point(36, 6),
-            Font = new Font("Segoe UI", 13, FontStyle.Bold),
-            ForeColor = Ui.Ink,
+            Location = new Point(0, 6),
+            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            ForeColor = Ui.Muted,
         };
-        p.Controls.Add(badge);
         p.Controls.Add(t);
         return p;
     }
@@ -546,7 +567,7 @@ public class FrmHome : UserControl
 
     DashTile Tile(string label, Color tone, Action<Graphics, Rectangle, Color?> icon, string key)
     {
-        return new DashTile(label, tone, (g, r) => icon(g, r, Color.White), () =>
+        return new DashTile(label, tone, (g, r) => icon(g, r, Ui.BrandDark), () =>
         {
             if (FindForm() is FrmMain main)
                 main.OpenPage(key);

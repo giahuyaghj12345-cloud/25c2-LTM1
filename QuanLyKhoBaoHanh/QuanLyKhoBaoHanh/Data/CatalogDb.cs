@@ -33,6 +33,7 @@ IF COL_LENGTH(N'dbo.dmsp', N'nh_vt1') IS NULL ALTER TABLE dbo.dmsp ADD nh_vt1 NV
 IF COL_LENGTH(N'dbo.dmsp', N'sl_min') IS NULL ALTER TABLE dbo.dmsp ADD sl_min DECIMAL(15,4) NULL;
 IF COL_LENGTH(N'dbo.dmsp', N'sl_max') IS NULL ALTER TABLE dbo.dmsp ADD sl_max DECIMAL(15,4) NULL;
 IF COL_LENGTH(N'dbo.dmsp', N'vt_ton_kho') IS NULL ALTER TABLE dbo.dmsp ADD vt_ton_kho BIT NULL;
+IF COL_LENGTH(N'dbo.dmsp', N'sl_ton') IS NULL ALTER TABLE dbo.dmsp ADD sl_ton DECIMAL(18,4) NOT NULL CONSTRAINT DF_dmsp_sl_ton DEFAULT(0);
 IF COL_LENGTH(N'dbo.dmsp', N'ma_tra_cuu') IS NULL ALTER TABLE dbo.dmsp ADD ma_tra_cuu NVARCHAR(50) NULL;
 IF COL_LENGTH(N'dbo.dmsp', N'ten_sp2') IS NULL ALTER TABLE dbo.dmsp ADD ten_sp2 NVARCHAR(255) NULL;
 IF COL_LENGTH(N'dbo.dmsp', N'ghi_chu') IS NULL ALTER TABLE dbo.dmsp ADD ghi_chu NVARCHAR(1000) NULL;
@@ -67,15 +68,16 @@ CREATE TABLE dbo.dmsp_gia (
         var nh = Has("nh_vt1") ? "ISNULL(nh_vt1,N'')" : "N''";
         var smin = Has("sl_min") ? "ISNULL(sl_min,0)" : "0";
         var smax = Has("sl_max") ? "ISNULL(sl_max,0)" : "0";
-        var ton = Has("vt_ton_kho")
+        var track = Has("vt_ton_kho")
             ? "CASE WHEN ISNULL(CONVERT(int, vt_ton_kho),1)=1 THEN N'Có' ELSE N'Không' END"
             : "N'Có'";
+        var slTon = Has("sl_ton") ? "ISNULL(sl_ton,0)" : "0";
         var st = Has("status")
             ? "CASE WHEN status=N'1' THEN N'Sử dụng' ELSE N'Ngưng' END"
             : "N'Sử dụng'";
         return SqlDb.Query($@"SET LOCK_TIMEOUT 8000;
 SELECT {key} AS id, ma_sp AS [Mã SP], ten_sp AS [Tên SP], ISNULL(dvt,N'') AS [ĐVT],
-            {nh} AS [Nhóm], {smin} AS [SL min], {smax} AS [SL max], {ton} AS [Tồn kho], {st} AS [Trạng thái]
+            {nh} AS [Nhóm], {smin} AS [SL min], {smax} AS [SL max], {slTon} AS [Tồn], {track} AS [Theo dõi tồn], {st} AS [Trạng thái]
             FROM dbo.dmsp");
     }
 
@@ -96,7 +98,7 @@ SELECT {key} AS id, ma_sp AS [Mã SP], ten_sp AS [Tên SP], ISNULL(dvt,N'') AS [
         dmspCols ??= LoadDmspCols();
         string[] want =
         [
-            "id", "ma_sp", "ma_tra_cuu", "ten_sp", "ten_sp2", "dvt", "nhieu_dvt", "vt_ke", "vt_ton_kho", "lot_yn",
+            "id", "ma_sp", "ma_tra_cuu", "ten_sp", "ten_sp2", "dvt", "nhieu_dvt", "vt_ke", "vt_ton_kho", "sl_ton", "lot_yn",
             "gia_ton", "loai_vt", "tk_vt", "thue_suat", "sua_tk_vt", "tk_dt", "tk_tl", "tk_dtnb", "tk_cl_vt", "tk_gv",
             "tk_spdd", "nh_vt1", "nh_vt2", "nh_vt3", "sl_min", "sl_max", "ma_nganh", "ghi_chu", "status", "thue_gtgt",
             "thue_bvmt", "ma_ck", "loai_ma", "ma_hs", "thuong_hieu", "gia_dinh_sp", "mau_sac", "mau_xe", "nam_sx",
@@ -430,5 +432,117 @@ CREATE TABLE dbo.dmkh (
     {
         try { SqlDb.Execute(sql); }
         catch { /* cột đã có hoặc không đủ quyền */ }
+    }
+
+    /// <summary>Import Excel kiểu AA_ImportExcel — upsert theo mã, trả (inserted, updated, skipped).</summary>
+    public static (int Ins, int Upd, int Skip) ImportLaborsFromExcel(DataTable table)
+    {
+        EnsureLabor();
+        var ins = 0; var upd = 0; var skip = 0;
+        foreach (DataRow row in table.Rows)
+        {
+            var code = ExcelIo.GetCell(row, "ma_tcong", "ma tien cong", "mã tiền công", "code", "ma");
+            if (string.IsNullOrWhiteSpace(code)) { skip++; continue; }
+            var name = ExcelIo.GetCell(row, "ten_tcong", "ten tien cong", "tên tiền công", "name", "ten");
+            var amountText = ExcelIo.GetCell(row, "don_gia", "don gia", "đơn giá", "amount", "so_tien");
+            decimal.TryParse(amountText.Replace(",", ""), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var amount);
+            var status = ExcelIo.GetCell(row, "status", "trang_thai", "hiệu lực");
+            if (string.IsNullOrWhiteSpace(status)) status = "1";
+
+            var found = SqlDb.Query("SELECT CONVERT(nvarchar(50), id) id FROM dbo.labor_costs WHERE code=@c",
+                SqlDb.P("@c", code));
+            if (found.Rows.Count > 0)
+            {
+                SaveLabor(Convert.ToString(found.Rows[0]["id"]), code, name, "", amount, "", status);
+                upd++;
+            }
+            else
+            {
+                SaveLabor(null, code, name, "", amount, "", status);
+                ins++;
+            }
+        }
+        return (ins, upd, skip);
+    }
+
+    public static (int Ins, int Upd, int Skip) ImportProductsFromExcel(DataTable table)
+    {
+        EnsureProduct();
+        var ins = 0; var upd = 0; var skip = 0;
+        foreach (DataRow row in table.Rows)
+        {
+            var ma = ExcelIo.GetCell(row, "ma_sp", "ma sp", "mã sp", "mã sản phẩm");
+            if (string.IsNullOrWhiteSpace(ma)) { skip++; continue; }
+            ma = ma.Trim().ToUpper();
+            var ten = ExcelIo.GetCell(row, "ten_sp", "ten sp", "tên sp", "tên sản phẩm");
+            var dvt = ExcelIo.GetCell(row, "dvt", "đvt", "don vi");
+            var tonText = ExcelIo.GetCell(row, "sl_ton", "sl ton", "tồn", "ton");
+            decimal.TryParse(tonText.Replace(",", ""), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var ton);
+            var trackText = ExcelIo.GetCell(row, "vt_ton_kho", "theo doi ton", "theo dõi tồn");
+            var track = string.IsNullOrWhiteSpace(trackText)
+                || trackText is "1" or "true" or "có" or "co" or "yes";
+
+            var found = SqlDb.Query("SELECT CONVERT(nvarchar(50), id) id FROM dbo.dmsp WHERE ma_sp=@c",
+                SqlDb.P("@c", ma));
+            var fields = new Dictionary<string, object?>
+            {
+                ["ma_sp"] = ma,
+                ["ten_sp"] = ten,
+                ["dvt"] = string.IsNullOrWhiteSpace(dvt) ? "Cái" : dvt,
+                ["sl_ton"] = ton,
+                ["vt_ton_kho"] = track,
+                ["status"] = "1",
+            };
+            var prices = new DataTable();
+            if (found.Rows.Count > 0)
+            {
+                SaveProduct(Convert.ToString(found.Rows[0]["id"]), fields, prices);
+                upd++;
+            }
+            else
+            {
+                SaveProduct(null, fields, prices);
+                ins++;
+            }
+        }
+        return (ins, upd, skip);
+    }
+
+    public static (int Ins, int Upd, int Skip) ImportCustomersFromExcel(DataTable table)
+    {
+        EnsureCustomer();
+        var ins = 0; var upd = 0; var skip = 0;
+        foreach (DataRow row in table.Rows)
+        {
+            var ma = ExcelIo.GetCell(row, "ma_kh", "ma kh", "mã kh", "mã khách");
+            if (string.IsNullOrWhiteSpace(ma)) { skip++; continue; }
+            ma = ma.Trim().ToUpper();
+            var ten = ExcelIo.GetCell(row, "ten_kh", "ten kh", "tên khách", "ten");
+            var sdt = ExcelIo.GetCell(row, "dien_thoai", "sdt", "phone", "điện thoại");
+            var dc = ExcelIo.GetCell(row, "dia_chi", "dia chi", "địa chỉ", "address");
+
+            var existing = FindCustomer(ma);
+            var fields = new Dictionary<string, object?>
+            {
+                ["ma_kh"] = ma,
+                ["ten_kh"] = string.IsNullOrWhiteSpace(ten) ? ma : ten,
+                ["dien_thoai"] = sdt,
+                ["dia_chi"] = dc,
+                ["status"] = "1",
+            };
+            if (existing != null)
+            {
+                SaveCustomer(Convert.ToString(existing["id"]), fields);
+                upd++;
+            }
+            else
+            {
+                SaveCustomer(null, fields);
+                ins++;
+            }
+        }
+        return (ins, upd, skip);
     }
 }

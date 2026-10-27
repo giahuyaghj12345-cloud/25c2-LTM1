@@ -198,7 +198,36 @@ public class FrmWarrantyWhEdit : Form
         }
         try
         {
-            WarrantyDb.SaveKho(phieuId, maGd, loaiNx, txtSerialMoi.Text.Trim(), ct);
+            InventoryDb.Ensure();
+            // Kiểm tra tồn trước khi ghi sổ (xuất)
+            int sign = maGd == 7 || (maGd == 10 && loaiNx == "xuat") || maGd == 8 ? -1
+                : maGd == 11 || (maGd == 10 && loaiNx == "nhap") ? 1 : 0;
+            if (sign < 0)
+            {
+                foreach (DataRow r in ct.Rows)
+                {
+                    if (r.RowState == DataRowState.Deleted) continue;
+                    var ma = Convert.ToString(r["ma_sp"])?.Trim() ?? "";
+                    var sl = r["so_luong"] == DBNull.Value ? 0m : Convert.ToDecimal(r["so_luong"]);
+                    if (ma.Length == 0 || sl <= 0m || !InventoryDb.TracksStock(ma)) continue;
+                    var ton = InventoryDb.GetTon(ma);
+                    if (ton < sl)
+                        throw new InvalidOperationException($"Mã {ma}: tồn {ton:0.####}, cần xuất {sl:0.####}.");
+                }
+            }
+
+            // Trừ/cộng tồn trước; nếu ghi phiếu BH lỗi thì hoàn ngược tồn
+            InventoryDb.ApplyWarrantyMovement(maGd, loaiNx, ct);
+            try
+            {
+                WarrantyDb.SaveKho(phieuId, maGd, loaiNx, txtSerialMoi.Text.Trim(), ct);
+            }
+            catch
+            {
+                try { InventoryDb.ApplyWarrantyMovement(maGd, loaiNx, ct, reverse: true); }
+                catch { /* giữ lỗi gốc SaveKho */ }
+                throw;
+            }
             DialogResult = DialogResult.OK;
             Close();
         }

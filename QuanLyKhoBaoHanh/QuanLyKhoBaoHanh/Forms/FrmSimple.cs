@@ -23,10 +23,32 @@ public class FrmLabors : UserControl
         };
         var del = Ui.Ghost("Xóa", true);
         del.Click += (_, _) => Delete();
+        var import = Ui.Ghost("Import Excel");
+        import.Click += (_, _) =>
+        {
+            if (FrmImportExcel.Run(FindForm(), FrmImportExcel.ImportMode.Labor))
+            {
+                LoadList();
+                Say("Đã import Excel tiền công", true);
+            }
+        };
+        var export = Ui.Ghost("Kết xuất");
+        export.Click += (_, _) =>
+        {
+            try
+            {
+                CatalogDb.EnsureLabor();
+                var dt = SqlDb.Query("SELECT id, code AS [Mã], name AS [Tên], amount AS [Số tiền], note AS [Ghi chú] FROM dbo.labor_costs ORDER BY code");
+                FrmImportExcel.ExportGrid(FindForm(), dt, "tiencong.xlsx");
+            }
+            catch (Exception ex) { Say(ex.Message, false); }
+        };
         var bar = Ui.Toolbar();
         bar.Controls.Add(neu);
         bar.Controls.Add(sua);
         bar.Controls.Add(del);
+        bar.Controls.Add(import);
+        bar.Controls.Add(export);
         bar.Controls.Add(lblMsg);
 
         Ui.StyleGrid(grid);
@@ -35,7 +57,7 @@ public class FrmLabors : UserControl
         grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) OpenEdit(CurrentId()); };
         Controls.Add(grid);
         Controls.Add(bar);
-        Controls.Add(Ui.PageHead("Danh mục tiền công", "Bấm Mới để thêm tiền công — double-click để sửa"));
+        Controls.Add(Ui.PageHead("Danh mục tiền công", "Bấm Mới / Import Excel (kiểu AA_ImportExcel STHINK) — double-click để sửa"));
         LoadList();
     }
 
@@ -102,21 +124,44 @@ public class FrmLabors : UserControl
 
 public class FrmInventory : UserControl
 {
+    readonly DataGridView grid = new();
+    readonly Label lblMsg = new() { AutoSize = true, Padding = new Padding(8, 8, 8, 0) };
+
     public FrmInventory()
     {
         Text = "Tồn kho sản phẩm";
         BackColor = Ui.Bg;
-        var grid = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true };
+        var bar = Ui.Toolbar();
+        var reload = Ui.Ghost("Làm mới");
+        reload.Click += (_, _) => LoadList();
+        bar.Controls.Add(reload);
+        bar.Controls.Add(lblMsg);
+
         Ui.StyleGrid(grid);
+        grid.Dock = DockStyle.Fill;
+        grid.ReadOnly = true;
         Controls.Add(grid);
-        Controls.Add(Ui.PageHead("Tồn kho sản phẩm", "Các sản phẩm được đánh dấu theo dõi tồn kho"));
+        Controls.Add(bar);
+        Controls.Add(Ui.PageHead("Tồn kho sản phẩm",
+            "Số tồn thực (sl_ton). Xuất kho / xuất PT BH trừ tồn; nhập kho sau BH cộng tồn — giống luồng GGV."));
+        LoadList();
+    }
+
+    void LoadList()
+    {
         try
         {
-            grid.DataSource = CatalogDb.ListProducts();
+            InventoryDb.Ensure();
+            grid.DataSource = InventoryDb.ListStock();
+            if (grid.Columns.Contains("id")) grid.Columns["id"]!.Visible = false;
+            lblMsg.ForeColor = Ui.Ok;
+            lblMsg.Text = $"Có {grid.Rows.Count} mã theo dõi tồn";
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Không tải được tồn kho: " + ex.Message);
+            lblMsg.ForeColor = Ui.Danger;
+            lblMsg.Text = ex.Message;
+            MessageBox.Show(FindForm(), "Không tải được tồn kho: " + ex.Message, Text);
         }
     }
 }
@@ -355,12 +400,30 @@ public class FrmUsers : UserControl
                 grid.Columns.Insert(0, img);
                 grid.RowTemplate.Height = 40;
             }
+            if (grid.Columns["Vai trò"] is DataGridViewColumn roleCol && roleCol is not DataGridViewComboBoxColumn)
+            {
+                var idx = roleCol.Index;
+                grid.Columns.Remove(roleCol);
+                var cbo = new DataGridViewComboBoxColumn
+                {
+                    Name = "Vai trò",
+                    HeaderText = "Vai trò",
+                    DataPropertyName = "Vai trò",
+                    FlatStyle = FlatStyle.Flat,
+                    DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton,
+                };
+                cbo.Items.AddRange(Session.KnownRoles);
+                grid.Columns.Insert(idx, cbo);
+            }
             foreach (DataGridViewRow row in grid.Rows)
             {
                 if (row.IsNewRow) continue;
                 var path = Convert.ToString(row.Cells["avatar"].Value);
                 var name = Convert.ToString(row.Cells["Người dùng"].Value) ?? "";
                 row.Cells["_avt"].Value = AvatarStore.Load(path) ?? AvatarStore.Letter(name, 36);
+                var role = (Convert.ToString(row.Cells["Vai trò"].Value) ?? "user").Trim().ToLowerInvariant();
+                if (!Session.KnownRoles.Contains(role)) role = "user";
+                row.Cells["Vai trò"].Value = role;
             }
             foreach (DataGridViewColumn col in grid.Columns)
                 col.ReadOnly = col.Name is not "Vai trò" and not "Tạo Serial";
@@ -384,7 +447,13 @@ public class FrmUsers : UserControl
     {
         var id = SelectedId();
         if (id == null) return;
-        var role = Convert.ToString(grid.CurrentRow!.Cells["Vai trò"].Value) ?? "user";
+        var role = (Convert.ToString(grid.CurrentRow!.Cells["Vai trò"].Value) ?? "user").Trim().ToLowerInvariant();
+        if (!Session.KnownRoles.Contains(role))
+        {
+            lblMsg.ForeColor = Ui.Danger;
+            lblMsg.Text = "Vai trò phải là: " + string.Join(", ", Session.KnownRoles);
+            return;
+        }
         var serial = ToBool(grid.CurrentRow.Cells["Tạo Serial"].Value);
         if (role is "admin" or "warehouse") serial = true;
         SqlDb.Execute("UPDATE dbo.users SET role=@r, canCreateSerial=@s, updatedAt=GETDATE() WHERE id=@id",

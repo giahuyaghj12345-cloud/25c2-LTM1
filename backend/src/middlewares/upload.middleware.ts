@@ -24,3 +24,29 @@ export const uploadAvatar = multer({
     cb(null, true);
   },
 });
+
+const importMemory = multer.memoryStorage();
+
+export const uploadImportExcel = multer({
+  storage: importMemory,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const name = (file.originalname || "").toLowerCase();
+    const ok =
+      name.endsWith(".xlsx") ||
+      name.endsWith(".xlsm") ||
+      name.endsWith(".xls") ||
+      name.endsWith(".csv") ||
+      file.mimetype.includes("sheet") ||
+      file.mimetype.includes("excel") ||
+      file.mimetype.includes("csv") ||
+      file.mimetype === "application/vnd.ms-excel" ||
+      file.mimetype === "text/csv" ||
+      file.mimetype === "application/octet-stream";
+    if (!ok) {
+      cb(new Error("Chỉ nhận file Excel/CSV (.xlsx, .xls, .csv)"));
+      return;
+    }
+    cb(null, true);
+  },
+});

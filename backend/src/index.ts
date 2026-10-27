@@ -34,6 +34,9 @@ if (process.env.SERVE_WEB === "1") {
 }
 
 const PORT = Number(process.env.PORT) || 5000;
+if (!process.env.JWT_SECRET) {
+  console.error("Thieu JWT_SECRET trong backend/.env — dang nhap se khong hoat dong.");
+}
 let connecting = false;
 
 async function connectDb() {
@@ -57,12 +60,17 @@ async function connectDb() {
       connecting = false;
       return;
     } catch (error) {
-      console.log(`DB attempt ${attempt}/8 failed:`, (error as Error).message);
+      const message = (error as Error).message;
+      console.log(`DB attempt ${attempt}/8 failed:`, message);
+      if (/password of the account has expired/i.test(message)) {
+        console.log("Mat khau SQL cua user trong file backend/.env da het han. Mo SSMS va doi mat khau login do, hoac tat CHECK_EXPIRATION.");
+        break;
+      }
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
   connecting = false;
-  console.log("Khong ket noi duoc SQL Server. Chi chay MOT cua so npm run dev o backend, roi thu lai.");
+  console.log("Khong ket noi duoc SQL Server. Xem dong loi phia tren: het han mat khau, sai user, hoac instance chua chay.");
 }
 
 const server = app.listen(PORT, () => {

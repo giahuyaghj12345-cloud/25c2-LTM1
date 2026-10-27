@@ -27,34 +27,50 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
+    <div className="login-screen">
       <div className="auth-toolbar">
         <ThemeToggle />
       </div>
-      <form className="card auth-card" onSubmit={onSubmit}>
-        <p className="eyebrow">Hệ thống quản lý</p>
-        <h1>Đăng ký tài khoản</h1>
-        <p className="muted">Tài khoản đầu tiên sẽ được gán quyền Quản trị viên</p>
-        {error && <div className="alert">{error}</div>}
-        <label>
-          Tên đăng nhập
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </label>
-        <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          Mật khẩu
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
-        </label>
-        <button type="submit" disabled={busy}>
-          {busy ? "Đang xử lý..." : "Tạo tài khoản"}
-        </button>
-        <p className="muted center">
-          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
-        </p>
-      </form>
+
+      <aside className="login-brand">
+        <div className="brand-mark">QL</div>
+        <h1>Tạo tài khoản làm việc</h1>
+        <p>Tài khoản đầu tiên trong hệ thống sẽ được gán quyền Quản trị viên.</p>
+        <ul className="login-points">
+          <li>Phân quyền theo vai trò</li>
+          <li>Theo dõi kho & bảo hành</li>
+          <li>Import Excel danh mục nhanh</li>
+        </ul>
+      </aside>
+
+      <div className="login-panel">
+        <form className="login-form" onSubmit={onSubmit}>
+          <header className="login-head">
+            <strong>Bắt đầu</strong>
+            <h1>Đăng ký</h1>
+            <p>Điền thông tin để tạo tài khoản mới</p>
+          </header>
+          {error && <div className="alert">{error}</div>}
+          <label>
+            Tên đăng nhập
+            <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </label>
+          <label>
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label>
+            Mật khẩu
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+          </label>
+          <button type="submit" disabled={busy}>
+            {busy ? "Đang xử lý..." : "Tạo tài khoản"}
+          </button>
+          <p className="muted center">
+            Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

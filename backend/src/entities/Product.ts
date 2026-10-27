@@ -84,6 +84,9 @@ export class Product {
   @Column("decimal", { name: "sl_max", precision: 15, scale: 4, default: 0 })
   maxQty!: number;
 
+  @Column("decimal", { name: "sl_ton", precision: 18, scale: 4, default: 0 })
+  stockQty!: number;
+
   @Column({ name: "ma_nganh", nullable: true, length: 20 })
   industryCode?: string;
 

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="Data">
+  <Table>
+   <Row>
+    <Cell><Data ss:Type="String">ma_kh</Data></Cell>
+    <Cell><Data ss:Type="String">ten_kh</Data></Cell>
+    <Cell><Data ss:Type="String">dien_thoai</Data></Cell>
+    <Cell><Data ss:Type="String">dia_chi</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">KHDEMO</Data></Cell>
+    <Cell><Data ss:Type="String">Khach demo Excel</Data></Cell>
+    <Cell><Data ss:Type="String">0900000002</Data></Cell>
+    <Cell><Data ss:Type="String">TP.HCM</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>

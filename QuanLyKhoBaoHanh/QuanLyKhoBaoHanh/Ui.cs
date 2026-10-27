@@ -5,18 +5,24 @@ namespace QuanLyKhoBaoHanh;
 
 static class Ui
 {
-    public static Color Bg { get; private set; } = Color.FromArgb(243, 248, 247);
+    // Sáng, thân thiện, gọn — sidebar sáng + accent xanh dịu (không navy ERP, không mint kẹo)
+    public static Color Bg { get; private set; } = Color.FromArgb(246, 248, 251);
     public static Color Panel { get; private set; } = Color.White;
-    public static Color Ink { get; private set; } = Color.FromArgb(27, 46, 50);
-    public static Color Muted { get; private set; } = Color.FromArgb(110, 131, 136);
-    public static Color Line { get; private set; } = Color.FromArgb(220, 234, 232);
-    public static Color Brand { get; private set; } = Color.FromArgb(20, 184, 166);
-    public static Color BrandSoft { get; private set; } = Color.FromArgb(216, 246, 241);
-    public static Color BrandDark { get; private set; } = Color.FromArgb(15, 118, 110);
-    public static Color Danger { get; private set; } = Color.FromArgb(225, 29, 72);
-    public static Color Ok { get; private set; } = Color.FromArgb(5, 150, 105);
-    public static Color GridAlt { get; private set; } = Color.FromArgb(247, 252, 251);
-    public static Color Select { get; private set; } = Color.FromArgb(204, 251, 241);
+    public static Color Ink { get; private set; } = Color.FromArgb(35, 48, 68);
+    public static Color Muted { get; private set; } = Color.FromArgb(107, 122, 144);
+    public static Color Line { get; private set; } = Color.FromArgb(228, 233, 240);
+    public static Color Brand { get; private set; } = Color.FromArgb(47, 111, 181);
+    public static Color BrandSoft { get; private set; } = Color.FromArgb(232, 241, 250);
+    public static Color BrandDark { get; private set; } = Color.FromArgb(32, 78, 130);
+    public static Color Danger { get; private set; } = Color.FromArgb(185, 28, 28);
+    public static Color Ok { get; private set; } = Color.FromArgb(21, 128, 61);
+    public static Color GridAlt { get; private set; } = Color.FromArgb(249, 251, 253);
+    public static Color Select { get; private set; } = Color.FromArgb(226, 238, 250);
+    public static Color SideBg { get; private set; } = Color.White;
+    public static Color SideInk { get; private set; } = Color.FromArgb(35, 48, 68);
+    public static Color SideMuted { get; private set; } = Color.FromArgb(107, 122, 144);
+    public static Color SideHover { get; private set; } = Color.FromArgb(240, 245, 250);
+    public static Color SideActive { get; private set; } = Color.FromArgb(232, 241, 250);
     public static bool Dark { get; private set; }
 
     static string ThemeFile =>
@@ -38,29 +44,39 @@ static class Ui
         Dark = dark;
         if (dark)
         {
-            Bg = Color.FromArgb(18, 22, 24);
-            Panel = Color.FromArgb(30, 36, 38);
-            Ink = Color.FromArgb(232, 238, 236);
-            Muted = Color.FromArgb(148, 162, 164);
-            Line = Color.FromArgb(52, 62, 64);
-            Brand = Color.FromArgb(20, 184, 166);
-            BrandSoft = Color.FromArgb(18, 52, 50);
-            BrandDark = Color.FromArgb(94, 234, 212);
-            Select = Color.FromArgb(16, 70, 66);
-            GridAlt = Color.FromArgb(36, 42, 44);
+            Bg = Color.FromArgb(22, 28, 38);
+            Panel = Color.FromArgb(32, 40, 54);
+            Ink = Color.FromArgb(236, 240, 246);
+            Muted = Color.FromArgb(156, 168, 186);
+            Line = Color.FromArgb(55, 66, 84);
+            Brand = Color.FromArgb(96, 165, 250);
+            BrandSoft = Color.FromArgb(36, 55, 82);
+            BrandDark = Color.FromArgb(186, 214, 247);
+            Select = Color.FromArgb(40, 62, 95);
+            GridAlt = Color.FromArgb(38, 46, 60);
+            SideBg = Color.FromArgb(28, 35, 48);
+            SideInk = Color.FromArgb(236, 240, 246);
+            SideMuted = Color.FromArgb(156, 168, 186);
+            SideHover = Color.FromArgb(42, 52, 70);
+            SideActive = Color.FromArgb(40, 62, 95);
         }
         else
         {
-            Bg = Color.FromArgb(243, 248, 247);
+            Bg = Color.FromArgb(246, 248, 251);
             Panel = Color.White;
-            Ink = Color.FromArgb(27, 46, 50);
-            Muted = Color.FromArgb(110, 131, 136);
-            Line = Color.FromArgb(220, 234, 232);
-            Brand = Color.FromArgb(20, 184, 166);
-            BrandSoft = Color.FromArgb(216, 246, 241);
-            BrandDark = Color.FromArgb(15, 118, 110);
-            Select = Color.FromArgb(204, 251, 241);
-            GridAlt = Color.FromArgb(247, 252, 251);
+            Ink = Color.FromArgb(35, 48, 68);
+            Muted = Color.FromArgb(107, 122, 144);
+            Line = Color.FromArgb(228, 233, 240);
+            Brand = Color.FromArgb(47, 111, 181);
+            BrandSoft = Color.FromArgb(232, 241, 250);
+            BrandDark = Color.FromArgb(32, 78, 130);
+            Select = Color.FromArgb(226, 238, 250);
+            GridAlt = Color.FromArgb(249, 251, 253);
+            SideBg = Color.White;
+            SideInk = Color.FromArgb(35, 48, 68);
+            SideMuted = Color.FromArgb(107, 122, 144);
+            SideHover = Color.FromArgb(240, 245, 250);
+            SideActive = Color.FromArgb(232, 241, 250);
         }
         if (save)
         {
@@ -199,10 +215,10 @@ static class Ui
         c.Height is > 40 and < 90 && c.Dock == DockStyle.Top;
 
     public static readonly Font Body = new("Segoe UI", 10f);
-    public static readonly Font Title = new("Segoe UI", 18f, FontStyle.Bold);
-    public static readonly Font Subtitle = new("Segoe UI", 9.5f);
-    public static readonly Font Nav = new("Segoe UI", 10f);
-    public static readonly Font Small = new("Segoe UI", 8.5f, FontStyle.Bold);
+    public static readonly Font Title = new("Segoe UI", 16f, FontStyle.Bold);
+    public static readonly Font Subtitle = new("Segoe UI", 9.25f);
+    public static readonly Font Nav = new("Segoe UI", 9.75f);
+    public static readonly Font Small = new("Segoe UI", 8.25f, FontStyle.Bold);
 
     public static void StyleGrid(DataGridView grid)
     {
@@ -212,13 +228,17 @@ static class Ui
         grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
         grid.EnableHeadersVisualStyles = false;
         grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-        grid.ColumnHeadersDefaultCellStyle.BackColor = BrandSoft;
-        grid.ColumnHeadersDefaultCellStyle.ForeColor = BrandDark;
-        grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = BrandSoft;
-        grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = BrandDark;
-        grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-        grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(6, 0, 0, 0);
-        grid.ColumnHeadersHeight = 40;
+        grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(
+            Math.Max(0, Panel.R - (Dark ? 0 : 4)),
+            Math.Max(0, Panel.G - (Dark ? 0 : 4)),
+            Math.Max(0, Panel.B - (Dark ? 0 : 2)));
+        if (!Dark) grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+        grid.ColumnHeadersDefaultCellStyle.ForeColor = Muted;
+        grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = grid.ColumnHeadersDefaultCellStyle.BackColor;
+        grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Muted;
+        grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+        grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 0, 0, 0);
+        grid.ColumnHeadersHeight = 38;
         grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
         grid.RowHeadersVisible = false;
         grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -383,7 +403,7 @@ static class Ui
         {
             Text = text,
             AutoSize = true,
-            MinimumSize = new Size(96, 36),
+            MinimumSize = new Size(96, 34),
             FlatStyle = FlatStyle.Flat,
             BackColor = Brand,
             ForeColor = Color.White,
@@ -394,7 +414,7 @@ static class Ui
             Tag = "primary",
         };
         b.FlatAppearance.BorderSize = 0;
-        RoundCtl(b, 10);
+        RoundCtl(b, 6);
         return b;
     }
 
@@ -404,7 +424,7 @@ static class Ui
         {
             Text = text,
             AutoSize = true,
-            MinimumSize = new Size(88, 36),
+            MinimumSize = new Size(88, 34),
             FlatStyle = FlatStyle.Flat,
             BackColor = Panel,
             ForeColor = danger ? Danger : Ink,
@@ -414,7 +434,7 @@ static class Ui
             Tag = danger ? "danger" : "ghost",
         };
         b.FlatAppearance.BorderColor = Line;
-        RoundCtl(b, 10);
+        RoundCtl(b, 6);
         return b;
     }
 
@@ -752,20 +772,21 @@ sealed class AvatarView : Control
 
 sealed class DashTile : Control
 {
-    readonly Color tone;
     readonly Action<Graphics, Rectangle> icon;
+    bool hover;
 
-    public DashTile(string label, Color tone, Action<Graphics, Rectangle> icon, Action onClick)
+    public DashTile(string label, Color _, Action<Graphics, Rectangle> icon, Action onClick)
     {
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
         Text = label;
-        this.tone = tone;
         this.icon = icon;
-        Size = new Size(148, 148);
-        Margin = new Padding(0, 0, 16, 16);
+        Size = new Size(168, 88);
+        Margin = new Padding(0, 0, 12, 12);
         Cursor = Cursors.Hand;
         TabStop = false;
         Click += (_, _) => onClick();
+        MouseEnter += (_, _) => { hover = true; Invalidate(); };
+        MouseLeave += (_, _) => { hover = false; Invalidate(); };
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -773,17 +794,17 @@ sealed class DashTile : Control
         var g = e.Graphics;
         g.Clear(Ui.Bg);
         var card = new Rectangle(0, 0, Width - 1, Height - 1);
-        Ui.RoundFill(g, card, 16, Ui.Panel, Ui.Line);
-        var ico = new Rectangle((Width - 72) / 2, 16, 72, 72);
-        Ui.RoundFill(g, ico, 16, tone);
-        icon(g, new Rectangle(ico.X + 18, ico.Y + 18, 36, 36));
-        using var font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+        Ui.RoundFill(g, card, 10, hover ? Ui.BrandSoft : Ui.Panel, hover ? Ui.Brand : Ui.Line);
+        var ico = new Rectangle(14, 22, 40, 40);
+        Ui.RoundFill(g, ico, 10, Ui.BrandSoft);
+        icon(g, new Rectangle(ico.X + 10, ico.Y + 10, 20, 20));
+        using var font = new Font("Segoe UI", 10f, FontStyle.Bold);
         using var br = new SolidBrush(Ui.Ink);
-        var text = new Rectangle(8, 96, Width - 16, 44);
+        var text = new Rectangle(66, 18, Width - 78, Height - 36);
         g.DrawString(Text, font, br, text, new StringFormat
         {
-            Alignment = StringAlignment.Center,
-            LineAlignment = StringAlignment.Near,
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Center,
         });
     }
 }

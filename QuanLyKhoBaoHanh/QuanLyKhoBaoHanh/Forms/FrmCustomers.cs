@@ -23,10 +23,27 @@ public class FrmCustomers : UserControl
         };
         var del = Ui.Ghost("Xóa", true);
         del.Click += (_, _) => Delete();
+        var import = Ui.Ghost("Import Excel");
+        import.Click += (_, _) =>
+        {
+            if (FrmImportExcel.Run(FindForm(), FrmImportExcel.ImportMode.Customers))
+            {
+                LoadList();
+                Say("Đã import Excel khách hàng", true);
+            }
+        };
+        var export = Ui.Ghost("Kết xuất");
+        export.Click += (_, _) =>
+        {
+            try { FrmImportExcel.ExportGrid(FindForm(), CatalogDb.ListCustomers(), "dmkh.xlsx"); }
+            catch (Exception ex) { Say(ex.Message, false); }
+        };
         var bar = Ui.Toolbar();
         bar.Controls.Add(neu);
         bar.Controls.Add(sua);
         bar.Controls.Add(del);
+        bar.Controls.Add(import);
+        bar.Controls.Add(export);
         bar.Controls.Add(lblMsg);
 
         Ui.StyleGrid(grid);

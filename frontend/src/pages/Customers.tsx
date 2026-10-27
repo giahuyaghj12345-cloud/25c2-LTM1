@@ -1,12 +1,16 @@
 import CatalogPage from "./CatalogPage";
-import { catalogApi, type Customer } from "../api";
+import { useAuth } from "../auth";
+import { canWriteCatalog, catalogApi, type Customer } from "../api";
 
 const GROUP: Record<string, string> = { dealer: "Đại lý", retail: "Khách lẻ" };
 
 export default function Customers() {
+  const { user } = useAuth();
   return (
     <CatalogPage<Customer>
       title="Danh mục khách hàng"
+      canWrite={canWriteCatalog(user)}
+      importMode="customers"
       load={catalogApi.customers}
       save={(item) => catalogApi.saveCustomer({ ...item, code: String(item.code || "").trim().toUpperCase() })}
       remove={catalogApi.deleteCustomer}
